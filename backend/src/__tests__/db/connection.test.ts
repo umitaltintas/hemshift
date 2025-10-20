@@ -91,4 +91,25 @@ describe('db/connection', () => {
       expect.objectContaining({ text: 'SELECT 1', error: failure })
     );
   });
+
+  it('handles pool error events by logging and exiting', async () => {
+    const { eventHandlers } = setupMocks(async () => ({ rows: [], rowCount: 0 }));
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('exit called');
+    }) as any);
+
+    await import('../../db/connection');
+
+    const handler = eventHandlers.get('error');
+    expect(handler).toBeDefined();
+
+    const poolError = new Error('connection lost');
+    await expect(async () => handler?.(poolError)).rejects.toThrow('exit called');
+    expect(errorSpy).toHaveBeenCalledWith('❌ Unexpected database error:', poolError);
+    expect(exitSpy).toHaveBeenCalledWith(-1);
+    expect(logSpy).not.toHaveBeenCalledWith(expect.stringContaining('[QUERY]'));
+  });
 });

@@ -1,80 +1,172 @@
 import request from 'supertest';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import app from '../../server';
 import { ScheduleModel } from '../../models/Schedule';
 import { SchedulerService } from '../../services/scheduler.service';
 
-// Mock the models and services
 vi.mock('../../models/Schedule');
 vi.mock('../../services/scheduler.service');
 
 const SCHEDULE_ID = 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e';
+const MONTH = '2025-12';
+
+const scheduleMock = vi.mocked(ScheduleModel);
 
 describe('Schedules API', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
 
-  describe('GET /api/schedules', () => {
-    it('should return all schedules', async () => {
-      const mockSchedules = [{ id: SCHEDULE_ID, month: '2025-10-01' }];
-      (ScheduleModel.findAll as vi.Mock).mockResolvedValue(mockSchedules);
+  it('GET /api/schedules returns all schedules', async () => {
+    const schedules = [{ id: SCHEDULE_ID, month: '2025-10-01' }];
+    scheduleMock.findAll.mockResolvedValue(schedules);
 
-      const response = await request(app).get('/api/schedules');
+    const res = await request(app).get('/api/schedules');
 
-      expect(response.status).toBe(200);
-      expect(response.body.data).toEqual(mockSchedules);
-    });
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual(schedules);
   });
 
-  describe('POST /api/schedules/generate', () => {
-    it('should generate a new schedule', async () => {
-      const month = '2025-12';
-      const mockSchedule = { id: '2b3c4d5e-6f78-9012-3456-7890abcdef12', month: `${month}-01` };
-      const mockGenerationResult = { fairness_score: 95, warnings: [] };
+  it('GET /api/schedules/:month rejects invalid format', async () => {
+    const res = await request(app).get('/api/schedules/202510');
 
-      (ScheduleModel.existsForMonth as vi.Mock).mockResolvedValue(false);
-      (ScheduleModel.create as vi.Mock).mockResolvedValue(mockSchedule);
-      (SchedulerService.prototype.generateSchedule as vi.Mock).mockResolvedValue(mockGenerationResult);
-
-      const response = await request(app).post('/api/schedules/generate').send({ month });
-
-      expect(response.status).toBe(201);
-      expect(response.body.message).toBe('Plan başarıyla oluşturuldu');
-      expect(ScheduleModel.create).toHaveBeenCalledWith({ month });
-      expect(SchedulerService.prototype.generateSchedule).toHaveBeenCalledWith(mockSchedule.id, month);
-    });
-
-    it('should return 409 if schedule for month already exists', async () => {
-        const month = '2025-12';
-        (ScheduleModel.existsForMonth as vi.Mock).mockResolvedValue(true);
-  
-        const response = await request(app).post('/api/schedules/generate').send({ month });
-  
-        expect(response.status).toBe(409);
-        expect(response.body.error.message).toBe('Bu ay için plan zaten mevcut');
-      });
+    expect(res.status).toBe(404);
+    expect(res.body.error.message).toBe('Geçersiz ay formatı (YYYY-MM bekleniyor)');
   });
 
-  describe('DELETE /api/schedules/:id', () => {
-    it('should delete a draft schedule', async () => {
-        (ScheduleModel.findById as vi.Mock).mockResolvedValue({ id: SCHEDULE_ID, status: 'draft' });
-        (ScheduleModel.delete as vi.Mock).mockResolvedValue(true);
+  it('GET /api/schedules/:month returns 404 when month not found', async () => {
+    scheduleMock.findByMonth.mockResolvedValue(null);
 
-        const response = await request(app).delete(`/api/schedules/${SCHEDULE_ID}`);
+    const res = await request(app).get('/api/schedules/2025-10');
 
-        expect(response.status).toBe(200);
-        expect(response.body.message).toBe('Plan başarıyla silindi');
-    });
-
-    it('should return 409 when trying to delete a published schedule', async () => {
-        (ScheduleModel.findById as vi.Mock).mockResolvedValue({ id: SCHEDULE_ID, status: 'published' });
-
-        const response = await request(app).delete(`/api/schedules/${SCHEDULE_ID}`);
-
-        expect(response.status).toBe(409);
-        expect(response.body.error.message).toContain('Yayınlanmış plan silinemez');
-    });
+    expect(res.status).toBe(404);
+    expect(res.body.error.message).toBe('Bu ay için plan bulunamadı');
   });
 
+  it('GET /api/schedules/:month returns detailed schedule', async () => {
+    scheduleMock.findByMonth.mockResolvedValue({ id: SCHEDULE_ID, month: '2025-10-01' });
+    const detail = { id: SCHEDULE_ID, days: [] };
+    scheduleMock.findDetailById.mockResolvedValue(detail as any);
+
+    const res = await request(app).get('/api/schedules/2025-10');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual(detail);
+    expect(scheduleMock.findDetailById).toHaveBeenCalledWith(SCHEDULE_ID);
+  });
+
+  it('POST /api/schedules/generate creates a new schedule', async () => {
+    scheduleMock.existsForMonth.mockResolvedValue(false);
+    scheduleMock.create.mockResolvedValue({ id: SCHEDULE_ID, month: `${MONTH}-01` } as any);
+    (SchedulerService.prototype.generateSchedule as vi.Mock).mockResolvedValue({
+      fairness_score: 95,
+      shifts: 10,
+      assignments: 30,
+      warnings: [],
+      generation_time_ms: 123,
+    });
+
+    const res = await request(app).post('/api/schedules/generate').send({ month: MONTH });
+
+    expect(res.status).toBe(201);
+    expect(scheduleMock.create).toHaveBeenCalledWith({ month: MONTH });
+    expect(SchedulerService.prototype.generateSchedule).toHaveBeenCalledWith(SCHEDULE_ID, MONTH);
+  });
+
+  it('POST /api/schedules/generate returns 409 when schedule exists', async () => {
+    scheduleMock.existsForMonth.mockResolvedValue(true);
+
+    const res = await request(app).post('/api/schedules/generate').send({ month: MONTH });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.message).toBe('Bu ay için plan zaten mevcut');
+  });
+
+  it('PUT /api/schedules/:id updates schedule status', async () => {
+    scheduleMock.findById.mockResolvedValue({ id: SCHEDULE_ID });
+    const updated = { id: SCHEDULE_ID, status: 'archived' };
+    scheduleMock.update.mockResolvedValue(updated as any);
+
+    const res = await request(app).put(`/api/schedules/${SCHEDULE_ID}`).send({ status: 'archived' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual(updated);
+    expect(scheduleMock.update).toHaveBeenCalledWith(SCHEDULE_ID, { status: 'archived' });
+  });
+
+  it('PUT /api/schedules/:id returns 404 when schedule missing', async () => {
+    scheduleMock.findById.mockResolvedValue(null);
+
+    const res = await request(app).put(`/api/schedules/${SCHEDULE_ID}`).send({ status: 'archived' });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.message).toBe('Plan bulunamadı');
+  });
+
+  it('POST /api/schedules/:id/publish publishes draft', async () => {
+    const draft = { id: SCHEDULE_ID, status: 'draft' };
+    scheduleMock.findById.mockResolvedValue(draft as any);
+    scheduleMock.update.mockResolvedValue({ ...draft, status: 'published' } as any);
+
+    const res = await request(app).post(`/api/schedules/${SCHEDULE_ID}/publish`);
+
+    expect(res.status).toBe(200);
+    expect(scheduleMock.update).toHaveBeenCalledWith(SCHEDULE_ID, { status: 'published' });
+  });
+
+  it('POST /api/schedules/:id/publish rejects missing schedule', async () => {
+    scheduleMock.findById.mockResolvedValue(null);
+
+    const res = await request(app).post(`/api/schedules/${SCHEDULE_ID}/publish`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.message).toBe('Plan bulunamadı');
+  });
+
+  it('POST /api/schedules/:id/publish rejects already published schedule', async () => {
+    scheduleMock.findById.mockResolvedValue({ id: SCHEDULE_ID, status: 'published' } as any);
+
+    const res = await request(app).post(`/api/schedules/${SCHEDULE_ID}/publish`);
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.message).toBe('Plan zaten yayınlanmış');
+  });
+
+  it('DELETE /api/schedules/:id deletes draft schedule', async () => {
+    scheduleMock.findById.mockResolvedValue({ id: SCHEDULE_ID, status: 'draft' } as any);
+    scheduleMock.delete.mockResolvedValue(true);
+
+    const res = await request(app).delete(`/api/schedules/${SCHEDULE_ID}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe('Plan başarıyla silindi');
+  });
+
+  it('DELETE /api/schedules/:id rejects missing schedule', async () => {
+    scheduleMock.findById.mockResolvedValue(null);
+
+    const res = await request(app).delete(`/api/schedules/${SCHEDULE_ID}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.message).toBe('Plan bulunamadı');
+  });
+
+  it('DELETE /api/schedules/:id rejects deletion of published schedule', async () => {
+    scheduleMock.findById.mockResolvedValue({ id: SCHEDULE_ID, status: 'published' } as any);
+
+    const res = await request(app).delete(`/api/schedules/${SCHEDULE_ID}`);
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.message).toContain('Yayınlanmış plan silinemez');
+  });
+
+  it('DELETE /api/schedules/:id returns 404 when delete fails', async () => {
+    scheduleMock.findById.mockResolvedValue({ id: SCHEDULE_ID, status: 'draft' } as any);
+    scheduleMock.delete.mockResolvedValue(false);
+
+    const res = await request(app).delete(`/api/schedules/${SCHEDULE_ID}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.message).toBe('Plan bulunamadı');
+  });
 });

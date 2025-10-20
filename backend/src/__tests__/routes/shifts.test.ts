@@ -21,7 +21,7 @@ describe('Shifts API', () => {
   });
 
   describe('GET /api/shifts', () => {
-    it('should return shifts for a given schedule_id', async () => {
+    it('returns shifts for a given schedule_id', async () => {
       const mockShifts = [{ id: SHIFT_ID, required_staff: 2 }];
       const mockAssignments = [{ id: ASSIGNMENT_ID, nurse_name: 'Test Nurse' }];
       const mockCounts = { staff_count: 1, responsible_count: 0 };
@@ -37,17 +37,58 @@ describe('Shifts API', () => {
       expect(ShiftModel.findBySchedule).toHaveBeenCalledWith(SCHEDULE_ID);
     });
 
-    it('should return a 404 if schedule_id is missing', async () => {
+    it('returns shifts for a specific date when provided', async () => {
+      const date = '2025-10-20';
+      const mockShifts = [{ id: SHIFT_ID, required_staff: 1, requires_responsible: false }];
+      (ShiftModel.findByDate as vi.Mock).mockResolvedValue(mockShifts);
+      (ShiftAssignmentModel.findByShift as vi.Mock).mockResolvedValue([]);
+      (ShiftAssignmentModel.getShiftCounts as vi.Mock).mockResolvedValue({ staff_count: 1, responsible_count: 0 });
+
+      const response = await request(app).get(`/api/shifts?schedule_id=${SCHEDULE_ID}&date=${date}`);
+
+      expect(response.status).toBe(200);
+      expect(ShiftModel.findByDate).toHaveBeenCalledWith(SCHEDULE_ID, date);
+      expect(response.body.data[0].is_complete).toBe(true);
+    });
+
+    it('returns a 404 if schedule_id is missing', async () => {
         const response = await request(app).get('/api/shifts');
         expect(response.status).toBe(404);
       });
+  });
+
+  describe('GET /api/shifts/:id', () => {
+    it('returns shift with assignments', async () => {
+      const shift = { id: SHIFT_ID, schedule_id: SCHEDULE_ID };
+      const assignments = [{ id: ASSIGNMENT_ID }];
+      const counts = { staff_count: 1, responsible_count: 1 };
+
+      (ShiftModel.findById as vi.Mock).mockResolvedValue(shift);
+      (ShiftAssignmentModel.findByShift as vi.Mock).mockResolvedValue(assignments);
+      (ShiftAssignmentModel.getShiftCounts as vi.Mock).mockResolvedValue(counts);
+
+      const response = await request(app).get(`/api/shifts/${SHIFT_ID}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.assignments).toEqual(assignments);
+      expect(response.body.data.current_staff).toBe(1);
+    });
+
+    it('returns 404 when shift not found', async () => {
+      (ShiftModel.findById as vi.Mock).mockResolvedValue(null);
+
+      const response = await request(app).get(`/api/shifts/${SHIFT_ID}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body.error.message).toBe('Vardiya bulunamadı');
+    });
   });
 
   describe('POST /api/shifts/:shift_id/assign', () => {
     const mockShift = { id: SHIFT_ID, date: '2025-10-20', schedule_id: SCHEDULE_ID, type: 'day_8h', required_staff: 1 };
     const mockNurse = { id: NURSE_ID, name: 'Nurse Jackie', role: 'staff' };
 
-    it('should assign a nurse to a shift successfully', async () => {
+    it('assigns a nurse to a shift successfully', async () => {
       (ShiftModel.findById as vi.Mock).mockResolvedValue(mockShift);
       (NurseModel.findById as vi.Mock).mockResolvedValue(mockNurse);
       (LeaveModel.isNurseOnLeave as vi.Mock).mockResolvedValue(false);
@@ -63,7 +104,30 @@ describe('Shifts API', () => {
       expect(response.body.message).toBe('Hemşire vardiyaya başarıyla atandı');
     });
 
-    it('should return 409 if nurse is on leave', async () => {
+    it('returns 404 if shift not found', async () => {
+      (ShiftModel.findById as vi.Mock).mockResolvedValue(null);
+
+      const response = await request(app)
+        .post(`/api/shifts/${SHIFT_ID}/assign`)
+        .send({ nurse_id: NURSE_ID });
+
+      expect(response.status).toBe(404);
+      expect(response.body.error.message).toBe('Vardiya bulunamadı');
+    });
+
+    it('returns 404 if nurse not found', async () => {
+      (ShiftModel.findById as vi.Mock).mockResolvedValue(mockShift);
+      (NurseModel.findById as vi.Mock).mockResolvedValue(null);
+
+      const response = await request(app)
+        .post(`/api/shifts/${SHIFT_ID}/assign`)
+        .send({ nurse_id: NURSE_ID });
+
+      expect(response.status).toBe(404);
+      expect(response.body.error.message).toBe('Hemşire bulunamadı');
+    });
+
+    it('returns 409 if nurse is on leave', async () => {
         (ShiftModel.findById as vi.Mock).mockResolvedValue(mockShift);
         (NurseModel.findById as vi.Mock).mockResolvedValue(mockNurse);
         (LeaveModel.isNurseOnLeave as vi.Mock).mockResolvedValue(true); // Nurse is on leave
@@ -76,7 +140,21 @@ describe('Shifts API', () => {
         expect(response.body.error.message).toBe('Hemşire bu tarihte izinde');
       });
 
-      it('should return 409 if shift is full', async () => {
+      it('returns 409 if nurse already assigned same day', async () => {
+        (ShiftModel.findById as vi.Mock).mockResolvedValue(mockShift);
+        (NurseModel.findById as vi.Mock).mockResolvedValue(mockNurse);
+        (LeaveModel.isNurseOnLeave as vi.Mock).mockResolvedValue(false);
+        (ShiftAssignmentModel.isNurseAssignedOnDate as vi.Mock).mockResolvedValue(true);
+
+        const response = await request(app)
+          .post(`/api/shifts/${SHIFT_ID}/assign`)
+          .send({ nurse_id: NURSE_ID });
+
+        expect(response.status).toBe(409);
+        expect(response.body.error.message).toBe('Hemşire bu günde zaten başka bir vardiyaya atanmış');
+      });
+
+      it('returns 409 if shift is full', async () => {
         (ShiftModel.findById as vi.Mock).mockResolvedValue(mockShift);
         (NurseModel.findById as vi.Mock).mockResolvedValue(mockNurse);
         (LeaveModel.isNurseOnLeave as vi.Mock).mockResolvedValue(false);
@@ -106,6 +184,22 @@ describe('Shifts API', () => {
 
         expect(response.status).toBe(409);
         expect(response.body.error.message).toBe('Sorumlu hemşire sadece 8 saatlik gündüz vardiyasında çalışabilir');
+      });
+
+      it('returns 409 when responsible slot already filled', async () => {
+        const responsibleNurse = { ...mockNurse, role: 'responsible' };
+        (ShiftModel.findById as vi.Mock).mockResolvedValue(mockShift);
+        (NurseModel.findById as vi.Mock).mockResolvedValue(responsibleNurse);
+        (LeaveModel.isNurseOnLeave as vi.Mock).mockResolvedValue(false);
+        (ShiftAssignmentModel.isNurseAssignedOnDate as vi.Mock).mockResolvedValue(false);
+        (ShiftAssignmentModel.getShiftCounts as vi.Mock).mockResolvedValue({ staff_count: 0, responsible_count: 1 });
+
+        const response = await request(app)
+          .post(`/api/shifts/${SHIFT_ID}/assign`)
+          .send({ nurse_id: NURSE_ID });
+
+        expect(response.status).toBe(409);
+        expect(response.body.error.message).toBe('Bu vardiyada zaten sorumlu hemşire var');
       });
 
   });
