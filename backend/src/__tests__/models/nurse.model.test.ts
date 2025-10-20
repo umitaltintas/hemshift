@@ -95,6 +95,23 @@ describe('NurseModel', () => {
 
     queryMock.mockResolvedValueOnce({ rows: [{ count: '3' }] }); // countStaff
     const staffCount = await NurseModel.countStaff();
-    expect(staffCount).toBe(3);
+   expect(staffCount).toBe(3);
+  });
+
+  it('handles missing data gracefully', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    expect(await NurseModel.findById('missing')).toBeNull();
+
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    expect(await NurseModel.findResponsible()).toBeNull();
+
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    expect(await NurseModel.update('ghost', { name: 'Nope' })).toBeNull();
+
+    queryMock.mockResolvedValueOnce({ rowCount: 0 });
+    expect(await NurseModel.delete('ghost')).toBe(false);
+
+    queryMock.mockResolvedValueOnce({ rows: [{ count: '0' }] });
+    expect(await NurseModel.countStaff()).toBe(0);
   });
 });

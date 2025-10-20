@@ -107,4 +107,42 @@ describe('ShiftModel', () => {
       responsible_count: 1,
     });
   });
+
+  it('covers optional values and early-return branches', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'shift2', required_staff: 4 }] });
+    const created = await ShiftModel.create({
+      schedule_id: 's1',
+      date: '2025-08-13',
+      type: 'night_16h',
+      start_time: '16:00',
+      end_time: '08:00',
+      required_staff: 4,
+    });
+    expect(created).toEqual({ id: 'shift2', required_staff: 4 });
+    expect(queryMock).toHaveBeenCalledTimes(1);
+
+    const afterLastCall = queryMock.mock.calls.at(-1)!;
+    expect(afterLastCall[1]).toContain(4);
+
+    expect(await ShiftModel.createMany([])).toEqual([]);
+    expect(queryMock).toHaveBeenCalledTimes(1);
+
+    queryMock.mockResolvedValueOnce({ rowCount: 0 });
+    expect(await ShiftModel.delete('ghost-shift')).toBe(false);
+    expect(queryMock).toHaveBeenCalledTimes(2);
+
+    expect(await ShiftAssignmentModel.createMany([])).toBe(0);
+    expect(queryMock).toHaveBeenCalledTimes(2);
+
+    queryMock.mockResolvedValueOnce({ rows: [{ count: '0' }] });
+    expect(await ShiftAssignmentModel.isNurseAssignedOnDate('n2', 's1', '2025-08-14')).toBe(false);
+    expect(queryMock).toHaveBeenCalledTimes(3);
+
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    expect(await ShiftAssignmentModel.getShiftCounts('shift2')).toEqual({
+      staff_count: 0,
+      responsible_count: 0,
+    });
+    expect(queryMock).toHaveBeenCalledTimes(4);
+  });
 });

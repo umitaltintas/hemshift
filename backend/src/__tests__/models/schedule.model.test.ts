@@ -103,4 +103,24 @@ describe('ScheduleModel', () => {
     queryMock.mockResolvedValueOnce({ rows: [{ count: '1' }] });
     expect(await ScheduleModel.existsForMonth('2025-07-01')).toBe(true);
   });
+
+  it('returns null/false for missing datasets', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    expect(await ScheduleModel.findById('missing')).toBeNull();
+
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    expect(await ScheduleModel.findByMonth('2025-01-01')).toBeNull();
+
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    expect(await ScheduleModel.findDetailById('missing')).toBeNull();
+
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    expect(await ScheduleModel.update('s3', { status: 'draft' })).toBeNull();
+
+    queryMock.mockResolvedValueOnce({ rowCount: 0 });
+    expect(await ScheduleModel.delete('ghost')).toBe(false);
+
+    queryMock.mockResolvedValueOnce({ rows: [{ count: '0' }] });
+    expect(await ScheduleModel.existsForMonth('2025-08-01')).toBe(false);
+  });
 });

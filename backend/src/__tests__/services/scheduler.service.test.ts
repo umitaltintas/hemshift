@@ -104,6 +104,14 @@ describe('SchedulerService', () => {
         // Act & Assert
         await expect(schedulerService.generateSchedule('schedule1', '2025-10')).rejects.toThrow('Sorumlu hemşire bulunamadı');
       });
+
+    it('should require at least two staff nurses', async () => {
+      (NurseModel.findResponsible as vi.Mock).mockResolvedValue({ id: 'resp', role: 'responsible' });
+      (NurseModel.findStaff as vi.Mock).mockResolvedValue([{ id: 'staff1', role: 'staff' }]);
+
+      await expect(schedulerService.generateSchedule('schedule1', '2025-10'))
+        .rejects.toThrow('En az 2 staf hemşire gerekli');
+    });
   });
 
   describe('Algorithm Constraints', () => {
@@ -219,6 +227,89 @@ describe('SchedulerService', () => {
             expect(workedNextDay).toBe(false);
         }
       }
+    });
+  });
+
+  describe('internal helpers', () => {
+    const buildDayInfo = (dateStr: string) => ({
+      date: new Date(dateStr),
+      dateStr,
+      isWeekend: false,
+      isHoliday: false,
+    });
+
+    it('computes warnings for heavy responsible leave usage and low staff hours', () => {
+      const svc = schedulerService as unknown as {
+        responsibleNurse: { id: string; name: string; role: string } | null;
+        staffNurses: Array<{ id: string; name: string; role: string }>;
+        leaves: any[];
+        initializeNurseStats: () => void;
+        nurseStats: Map<string, any>;
+        getWarnings: () => string[];
+      };
+
+      svc.responsibleNurse = { id: 'resp', name: 'Rita', role: 'responsible' };
+      svc.staffNurses = [
+        { id: 's1', name: 'Ayşe', role: 'staff' },
+        { id: 's2', name: 'Buse', role: 'staff' },
+        { id: 's3', name: 'Ceyda', role: 'staff' },
+      ];
+      svc.initializeNurseStats();
+
+      svc.leaves = Array.from({ length: 11 }, (_, idx) => ({
+        nurse_id: 'resp',
+        type: 'annual',
+        start_date: `2025-01-${String(idx + 1).padStart(2, '0')}`,
+        end_date: `2025-01-${String(idx + 1).padStart(2, '0')}`,
+      }));
+
+      const statsMap = svc.nurseStats;
+      statsMap.get('s1').totalHours = 120;
+      statsMap.get('s2').totalHours = 120;
+      statsMap.get('s3').totalHours = 20;
+
+      const warnings = svc.getWarnings();
+      expect(warnings.some((w) => w.includes('Sorumlu hemşire'))).toBe(true);
+      expect(warnings.some((w) => w.includes('Ceyda'))).toBe(true);
+    });
+
+    it('evaluates leave overlap and night eligibility rules', () => {
+      const svc = schedulerService as unknown as {
+        staffNurses: Array<{ id: string; name: string; role: string }>;
+        leaves: any[];
+        initializeNurseStats: () => void;
+        nurseStats: Map<string, any>;
+        isNurseOnLeave: (nurseId: string, date: string) => boolean;
+        getEligibleStaffForNight: (day: ReturnType<typeof buildDayInfo>) => Array<{ id: string }>;
+      };
+
+      svc.staffNurses = [
+        { id: 'n1', name: 'Ali', role: 'staff' },
+        { id: 'n2', name: 'Berna', role: 'staff' },
+        { id: 'n3', name: 'Can', role: 'staff' },
+        { id: 'n4', name: 'Deniz', role: 'staff' },
+      ];
+      svc.initializeNurseStats();
+
+      svc.leaves = [
+        { nurse_id: 'n1', type: 'preference', start_date: '2025-02-10', end_date: '2025-02-12' },
+        { nurseId: 'n1', startDate: '2025-02-15', endDate: '2025-02-16', type: 'annual' },
+        { nurse_id: 'n2', type: 'annual', start_date: '2025-02-05', end_date: '2025-02-05' },
+        { nurse_id: 'n3', type: 'annual', start_date: '2025-02-06' }, // missing end date ignored
+      ];
+
+      expect(svc.isNurseOnLeave('n1', '2025-02-11')).toBe(false); // preference ignored
+      expect(svc.isNurseOnLeave('n1', '2025-02-15')).toBe(true);
+      expect(svc.isNurseOnLeave('n3', '2025-02-06')).toBe(false);
+
+      const statsMap = svc.nurseStats;
+      statsMap.get('n1').lastShiftDate = new Date('2025-02-04');
+      statsMap.get('n1').nightShiftCount = 1;
+      statsMap.get('n2').consecutiveDays = 5;
+      statsMap.get('n3').nightShiftCount = 10;
+
+      const eligible = svc.getEligibleStaffForNight(buildDayInfo('2025-02-05'));
+      expect(eligible.map((n) => n.id)).toEqual(['n4']);
     });
   });
 });

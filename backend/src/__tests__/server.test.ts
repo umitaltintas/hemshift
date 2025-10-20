@@ -24,4 +24,22 @@ describe('server bootstrap', () => {
 
     expect(express.application.listen).toHaveBeenCalled();
   });
+
+  it('honors custom PORT environment variable', async () => {
+    try {
+      vi.resetModules();
+      process.env.PORT = '9090';
+      const listenSpy = vi
+        .spyOn(express.application, 'listen')
+        .mockReturnValue({ close: vi.fn() } as unknown as ReturnType<typeof express.application.listen>);
+
+      const { default: app } = await import('../server');
+      expect(listenSpy).toHaveBeenCalledWith('9090', expect.any(Function));
+
+      const response = await request(app).get('/health');
+      expect(response.status).toBe(200);
+    } finally {
+      delete process.env.PORT;
+    }
+  });
 });

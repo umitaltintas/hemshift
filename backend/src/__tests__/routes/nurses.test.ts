@@ -101,6 +101,20 @@ describe('Nurses API', () => {
     expect(mockedNurseModel.create).toHaveBeenCalledWith({ name: 'Bob', role: 'staff' });
   });
 
+  it('POST /api/nurses creates first responsible nurse', async () => {
+    const created = { id: nurseId, name: 'Rita', role: 'responsible' };
+    mockedNurseModel.hasResponsible.mockResolvedValue(false);
+    mockedNurseModel.create.mockResolvedValue(created);
+
+    const res = await request(app)
+      .post('/api/nurses')
+      .send({ name: 'Rita', role: 'responsible' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data).toEqual(created);
+    expect(mockedNurseModel.hasResponsible).toHaveBeenCalled();
+  });
+
   it('PUT /api/nurses/:id returns 404 when nurse missing', async () => {
     mockedNurseModel.findById.mockResolvedValue(null);
 
@@ -156,5 +170,15 @@ describe('Nurses API', () => {
 
     expect(res.status).toBe(404);
     expect(res.body.error.message).toBe('Hemşire bulunamadı');
+  });
+
+  it('handles unexpected errors with 500 response', async () => {
+    mockedNurseModel.findAll.mockRejectedValue(new Error('db down'));
+
+    const res = await request(app).get('/api/nurses');
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.message).toBe('db down');
+    expect(res.body.success).toBe(false);
   });
 });

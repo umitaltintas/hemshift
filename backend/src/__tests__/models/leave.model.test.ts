@@ -75,4 +75,60 @@ describe('LeaveModel', () => {
     queryMock.mockResolvedValueOnce({ rowCount: 1 });
     expect(await LeaveModel.delete('l3')).toBe(true);
   });
+
+  it('handles optional filters, updates, and fallbacks', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] }); // findAll month-only
+    await LeaveModel.findAll({ month: '2025-07' });
+    const [, monthParams] = queryMock.mock.calls.at(-1)!;
+    expect(monthParams?.[0]).toBe('2025-07-01');
+    expect(monthParams?.[1]).toMatch(/^2025-07-3[01]$/);
+
+    queryMock.mockResolvedValueOnce({ rows: [] }); // findById null
+    const missing = await LeaveModel.findById('missing');
+    expect(missing).toBeNull();
+
+    queryMock.mockResolvedValueOnce({ rows: [{ count: '0' }] }); // isNurseOnLeave false branch
+    expect(await LeaveModel.isNurseOnLeave('n4', '2025-08-01')).toBe(false);
+
+    queryMock.mockResolvedValueOnce({}); // update multi-field
+    queryMock.mockResolvedValueOnce({
+      rows: [{
+        id: 'l5',
+        type: 'sick',
+        start_date: '2025-09-02',
+        end_date: '2025-09-05',
+        notes: 'Updated',
+      }],
+    });
+    const complexUpdate = await LeaveModel.update('l5', {
+      type: 'sick',
+      start_date: '2025-09-02',
+      end_date: '2025-09-05',
+      notes: 'Updated',
+    });
+    expect(complexUpdate).toEqual({
+      id: 'l5',
+      type: 'sick',
+      start_date: '2025-09-02',
+      end_date: '2025-09-05',
+      notes: 'Updated',
+    });
+    const [updateSql, updateParams] = queryMock.mock.calls.at(-2)!;
+    expect(updateSql).toContain('UPDATE leaves');
+    expect(updateParams).toEqual([
+      'sick',
+      '2025-09-02',
+      '2025-09-05',
+      'Updated',
+      'l5',
+    ]);
+
+    queryMock.mockResolvedValueOnce({ rows: [] }); // update returns null
+    queryMock.mockResolvedValueOnce({ rows: [] }); // findById after null update
+    const updateNull = await LeaveModel.update('l6', { type: 'annual' });
+    expect(updateNull).toBeNull();
+
+    queryMock.mockResolvedValueOnce({ rowCount: 0 }); // delete false branch
+    expect(await LeaveModel.delete('missing')).toBe(false);
+  });
 });

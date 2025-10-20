@@ -37,6 +37,16 @@ describe('Leaves API', () => {
       expect(res.status).toBe(200);
       expect(leaveMock.findAll).toHaveBeenCalledWith({ nurse_id: NURSE_ID, month: '2025-11' });
     });
+
+    it('propagates errors through next()', async () => {
+      leaveMock.findAll.mockRejectedValue(new Error('boom'));
+
+      const res = await request(app).get('/api/leaves');
+
+      expect(res.status).toBe(500);
+      expect(res.body.error.message).toBe('boom');
+      expect(res.body.success).toBe(false);
+    });
   });
 
   describe('GET /api/leaves/:id', () => {
