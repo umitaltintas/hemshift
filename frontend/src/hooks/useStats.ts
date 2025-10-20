@@ -1,18 +1,21 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { getMonthlyStats } from '../services/statsService';
-import { MonthlyStats } from '../../../shared/types';
+import { MonthlyStats } from '../types/entities';
 
 export const useStats = (scheduleId: string) => {
-  const { data: stats, isLoading, isError } = useQuery<MonthlyStats>({
+  const {
+    data: stats,
+    isLoading,
+    isError
+  } = useQuery<MonthlyStats>({
     queryKey: ['stats', scheduleId],
     queryFn: () => getMonthlyStats(scheduleId),
-    enabled: !!scheduleId,
+    enabled: !!scheduleId
   });
 
   return {
     stats,
     isLoading,
-    isError,
+    isError
   };
 };

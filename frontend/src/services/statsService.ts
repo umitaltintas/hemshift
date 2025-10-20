@@ -1,8 +1,9 @@
 
 import api from './api';
-import { MonthlyStats } from '../../../shared/types';
+import { ApiMonthlyStats, ApiResponse, MonthlyStats } from '../types/entities';
+import { mapMonthlyStats } from '../utils/transformers';
 
 export const getMonthlyStats = async (scheduleId: string): Promise<MonthlyStats> => {
-  const response = await api.get(`/stats/monthly/${scheduleId}`);
-  return response.data.data;
+  const response = await api.get<ApiResponse<ApiMonthlyStats>>(`/stats/monthly/${scheduleId}`);
+  return mapMonthlyStats(response.data.data);
 };
