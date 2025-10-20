@@ -134,15 +134,31 @@ describe('ShiftModel', () => {
     expect(await ShiftAssignmentModel.createMany([])).toBe(0);
     expect(queryMock).toHaveBeenCalledTimes(2);
 
+    queryMock.mockResolvedValueOnce({ rowCount: 0 });
+    expect(await ShiftModel.deleteBySchedule('ghost-sched')).toBe(0);
+    expect(queryMock).toHaveBeenCalledTimes(3);
+
     queryMock.mockResolvedValueOnce({ rows: [{ count: '0' }] });
     expect(await ShiftAssignmentModel.isNurseAssignedOnDate('n2', 's1', '2025-08-14')).toBe(false);
-    expect(queryMock).toHaveBeenCalledTimes(3);
+    expect(queryMock).toHaveBeenCalledTimes(4);
 
     queryMock.mockResolvedValueOnce({ rows: [] });
     expect(await ShiftAssignmentModel.getShiftCounts('shift2')).toEqual({
       staff_count: 0,
       responsible_count: 0,
     });
-    expect(queryMock).toHaveBeenCalledTimes(4);
+    expect(queryMock).toHaveBeenCalledTimes(5);
+
+    queryMock.mockResolvedValueOnce({ rowCount: 0 });
+    expect(await ShiftAssignmentModel.delete('ghost-assignment')).toBe(false);
+    expect(queryMock).toHaveBeenCalledTimes(6);
+
+    queryMock.mockResolvedValueOnce({ rowCount: 0 });
+    expect(await ShiftAssignmentModel.deleteByShift('ghost-shift')).toBe(0);
+    expect(queryMock).toHaveBeenCalledTimes(7);
+
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    expect(await ShiftModel.findById('missing')).toBeNull();
+    expect(queryMock).toHaveBeenCalledTimes(8);
   });
 });

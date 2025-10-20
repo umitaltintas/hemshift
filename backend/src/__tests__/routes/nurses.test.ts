@@ -181,4 +181,13 @@ describe('Nurses API', () => {
     expect(res.body.error.message).toBe('db down');
     expect(res.body.success).toBe(false);
   });
+
+  it('handles staff listing errors gracefully', async () => {
+    mockedNurseModel.findStaff.mockRejectedValue(new Error('staff fail'));
+
+    const res = await request(app).get('/api/nurses/staff');
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.message).toBe('staff fail');
+  });
 });
