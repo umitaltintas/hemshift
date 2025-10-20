@@ -1,14 +1,14 @@
 
 import React from 'react';
 import { useStats } from '../../hooks/useStats';
-import { MonthlyStats } from '../../../../shared/types';
 
 import Error from '../ui/Error';
 
 // ...
 
 const StatsTable: React.FC<{ scheduleId: string }> = ({ scheduleId }) => {
-  // ...
+  const { stats, isLoading, isError } = useStats(scheduleId);
+
   if (isLoading) return <div>Yükleniyor...</div>;
   if (isError) return <Error message="İstatistikler yüklenirken bir hata oluştu." />;
 

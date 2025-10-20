@@ -8,7 +8,7 @@ import Error from '../ui/Error';
 // ...
 
 const FairnessChart: React.FC<{ scheduleId: string }> = ({ scheduleId }) => {
-  // ...
+  const { stats, isLoading, isError } = useStats(scheduleId);
   if (isLoading) return <div>Yükleniyor...</div>;
   if (isError) return <Error message="Grafik yüklenirken bir hata oluştu." />;
 
