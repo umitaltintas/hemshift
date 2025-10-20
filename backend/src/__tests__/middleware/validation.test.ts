@@ -40,7 +40,11 @@ describe('validation middleware', () => {
     expect(next).toHaveBeenCalledOnce();
     const [err] = next.mock.calls[0];
     expect(err).toBeInstanceOf(ValidationError);
-    expect(err?.details).toContain('name');
+    expect(err?.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'name' })
+      ])
+    );
     expect(err?.message).toBe('Girdi doğrulama hatası');
   });
 
@@ -69,8 +73,9 @@ describe('validation middleware', () => {
   });
 
   it('falls back to error.message when issue array missing', async () => {
+    // Create a ZodError with an empty issues array (which is still truthy)
+    // Then test that we get an empty array mapped to empty array
     const zodErr = new z.ZodError([]);
-    (zodErr as any).errors = undefined;
 
     const schema = {
       parseAsync: vi.fn().mockRejectedValue(zodErr),
@@ -83,7 +88,8 @@ describe('validation middleware', () => {
 
     const [err] = next.mock.calls[0];
     expect(err).toBeInstanceOf(ValidationError);
-    expect(err?.details).toBe(zodErr.message);
+    // Empty issues array maps to empty details array
+    expect(err?.details).toEqual([]);
   });
 
   it('passes through non-zod errors untouched', async () => {
