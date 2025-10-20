@@ -54,9 +54,9 @@ interface ShiftNeed {
 }
 
 interface Assignment {
-  shiftId: string
-  nurseId: string
-  assignedBy: 'algorithm'
+  shift_id: string
+  nurse_id: string
+  assigned_by: 'algorithm'
 }
 
 // =============================================================================
@@ -372,9 +372,9 @@ export class SchedulerService {
 
     for (const nurse of selectedStaff) {
       assignments.push({
-        shiftId: shift.id,
-        nurseId: nurse.id,
-        assignedBy: 'algorithm'
+        shift_id: shift.id,
+        nurse_id: nurse.id,
+        assigned_by: 'algorithm'
       })
 
       // Update stats
@@ -602,10 +602,29 @@ export class SchedulerService {
    */
   private isNurseOnLeave(nurseId: string, dateStr: string): boolean {
     return this.leaves.some((leave) => {
-      if (leave.nurse_id !== nurseId) return false
-      if (leave.type === 'preference') return false // Preferences don't block
+      const normalized = leave as Leave & {
+        nurse_id?: string
+        start_date?: string
+        end_date?: string
+      }
 
-      return dateStr >= leave.start_date && dateStr <= leave.end_date
+      const leaveNurseId = normalized.nurseId ?? normalized.nurse_id
+      if (leaveNurseId !== nurseId) {
+        return false
+      }
+
+      if ((normalized.type ?? 'annual') === 'preference') {
+        return false // Preferences don't block schedule
+      }
+
+      const startDate = normalized.startDate ?? normalized.start_date
+      const endDate = normalized.endDate ?? normalized.end_date
+
+      if (!startDate || !endDate) {
+        return false
+      }
+
+      return dateStr >= startDate && dateStr <= endDate
     })
   }
 
@@ -682,4 +701,3 @@ export class SchedulerService {
     return warnings
   }
 }
-

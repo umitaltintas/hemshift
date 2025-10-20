@@ -12,11 +12,13 @@ export function validate(schema: z.ZodSchema) {
       next()
     } catch (error) {
       if (error instanceof ZodError) {
-        const errors = error.errors.map(err => ({
-          field: err.path.join('.'),
-          message: err.message
-        }))
-        next(new ValidationError('Girdi doğrulama hatası', errors))
+        const details = error.errors
+          ? error.errors.map((err) => ({
+              field: err.path.join('.'),
+              message: err.message
+            }))
+          : error.message
+        next(new ValidationError('Girdi doğrulama hatası', details))
       } else {
         next(error)
       }
