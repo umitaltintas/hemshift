@@ -4,11 +4,13 @@ interface DashboardHeaderProps {
   month: string;
   monthLabel: string;
   schedule: any;
+  viewMode: 'calendar' | 'board';
   onMonthChange: (month: string) => void;
   onGenerate: () => void;
   onPublish: () => void;
   onValidate: () => void;
   onExport: (format: 'excel' | 'csv') => void;
+  onViewModeChange: (mode: 'calendar' | 'board') => void;
   isGenerating: boolean;
   isPublishing: boolean;
   isValidating: boolean;
@@ -19,11 +21,13 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   month,
   monthLabel,
   schedule,
+  viewMode,
   onMonthChange,
   onGenerate,
   onPublish,
   onValidate,
   onExport,
+  onViewModeChange,
   isGenerating,
   isPublishing,
   isValidating,
@@ -44,6 +48,32 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           onChange={(event) => onMonthChange(event.target.value)}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
+        <div className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white p-1 shadow-sm">
+          <button
+            type="button"
+            onClick={() => onViewModeChange('calendar')}
+            className={`rounded px-3 py-1.5 text-xs font-medium transition ${
+              viewMode === 'calendar'
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Takvim görünümü"
+          >
+            📅 Takvim
+          </button>
+          <button
+            type="button"
+            onClick={() => onViewModeChange('board')}
+            className={`rounded px-3 py-1.5 text-xs font-medium transition ${
+              viewMode === 'board'
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Board görünümü"
+          >
+            📋 Board
+          </button>
+        </div>
         <button
           type="button"
           onClick={onGenerate}

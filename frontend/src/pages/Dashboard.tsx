@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { format, parse } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { CalendarGrid } from '../components/Calendar';
+import BoardView from '../components/Board/BoardView';
 import { useSchedule } from '../hooks/useSchedule';
 import { useNurses } from '../hooks/useNurses';
 import { DashboardHeader } from '../components/Dashboard/DashboardHeader';
@@ -19,12 +20,21 @@ const statusStyles: Record<string, string> = {
 
 const Dashboard: React.FC = () => {
   const [month, setMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [viewMode, setViewMode] = useState<'calendar' | 'board'>(() => {
+    const saved = localStorage.getItem('dashboardViewMode');
+    return (saved as 'calendar' | 'board') || 'calendar';
+  });
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isExporting, setIsExporting] = useState<'excel' | 'csv' | null>(null);
+
+  // Persist view mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('dashboardViewMode', viewMode);
+  }, [viewMode]);
 
   const {
     schedule,
@@ -154,11 +164,13 @@ const Dashboard: React.FC = () => {
         month={month}
         monthLabel={monthLabel}
         schedule={schedule}
+        viewMode={viewMode}
         onMonthChange={setMonth}
         onGenerate={handleGenerate}
         onPublish={handlePublish}
         onValidate={handleValidate}
         onExport={handleExport}
+        onViewModeChange={setViewMode}
         isGenerating={isGenerating}
         isPublishing={isPublishing}
         isValidating={isValidating}
@@ -177,15 +189,27 @@ const Dashboard: React.FC = () => {
 
       <ValidationResultSection validationResult={validationResult} />
 
-      <CalendarGrid
-        schedule={schedule}
-        nurses={nurses}
-        isLoading={isLoading}
-        isError={isError}
-        nursesLoading={nursesLoading}
-        onAssign={(shiftId, nurseId) => updateAssignmentAsync({ shiftId, nurseId })}
-        onRemove={(assignmentId) => removeAssignmentAsync(assignmentId)}
-      />
+      {viewMode === 'calendar' ? (
+        <CalendarGrid
+          schedule={schedule}
+          nurses={nurses}
+          isLoading={isLoading}
+          isError={isError}
+          nursesLoading={nursesLoading}
+          onAssign={(shiftId, nurseId) => updateAssignmentAsync({ shiftId, nurseId })}
+          onRemove={(assignmentId) => removeAssignmentAsync(assignmentId)}
+        />
+      ) : (
+        <BoardView
+          schedule={schedule}
+          nurses={nurses}
+          isLoading={isLoading}
+          isError={isError}
+          nursesLoading={nursesLoading}
+          onAssign={(shiftId, nurseId) => updateAssignmentAsync({ shiftId, nurseId })}
+          onRemove={(assignmentId) => removeAssignmentAsync(assignmentId)}
+        />
+      )}
     </div>
   );
 };
