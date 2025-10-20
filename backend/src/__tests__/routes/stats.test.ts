@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryResult } from '../testUtils';
 import app from '../../server';
 import { query } from '../../db/connection';
 
@@ -35,10 +36,10 @@ describe('Stats API', () => {
       };
 
       queryMock
-        .mockResolvedValueOnce({ rows: [mockSchedule] }) // schedule exists
-        .mockResolvedValueOnce({ rows: [] }) // refresh view
-        .mockResolvedValueOnce({ rows: mockNurseStats }) // nurse stats
-        .mockResolvedValueOnce({ rows: [mockFairness] }); // fairness
+        .mockResolvedValueOnce(createQueryResult({ rows: [mockSchedule] })) // schedule exists
+        .mockResolvedValueOnce(createQueryResult({ rows: [] })) // refresh view
+        .mockResolvedValueOnce(createQueryResult({ rows: mockNurseStats })) // nurse stats
+        .mockResolvedValueOnce(createQueryResult({ rows: [mockFairness] })); // fairness
 
       const res = await request(app).get(`/api/stats/monthly/${SCHEDULE_ID}`);
 
@@ -52,10 +53,10 @@ describe('Stats API', () => {
       const mockSchedule = { id: SCHEDULE_ID, month: '2025-11-01' };
 
       queryMock
-        .mockResolvedValueOnce({ rows: [mockSchedule] })
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [] });
+        .mockResolvedValueOnce(createQueryResult({ rows: [mockSchedule] }))
+        .mockResolvedValueOnce(createQueryResult({ rows: [] }))
+        .mockResolvedValueOnce(createQueryResult({ rows: [] }))
+        .mockResolvedValueOnce(createQueryResult({ rows: [] }));
 
       const res = await request(app).get(`/api/stats/monthly/${SCHEDULE_ID}`);
 
@@ -78,7 +79,7 @@ describe('Stats API', () => {
     });
 
     it('returns 404 when schedule missing', async () => {
-      queryMock.mockResolvedValueOnce({ rows: [] });
+      queryMock.mockResolvedValueOnce(createQueryResult({ rows: [] }));
 
       const res = await request(app).get(`/api/stats/monthly/${SCHEDULE_ID}`);
 
@@ -98,9 +99,9 @@ describe('Stats API', () => {
       const assignments = [{ date: '2025-10-01', type: 'day_8h', hours: 8 }];
 
       queryMock
-        .mockResolvedValueOnce({ rows: [] }) // refresh view
-        .mockResolvedValueOnce({ rows: [nurseSummary] })
-        .mockResolvedValueOnce({ rows: assignments });
+        .mockResolvedValueOnce(createQueryResult({ rows: [] })) // refresh view
+        .mockResolvedValueOnce(createQueryResult({ rows: [nurseSummary] }))
+        .mockResolvedValueOnce(createQueryResult({ rows: assignments }));
 
       const res = await request(app).get(`/api/stats/nurse/${NURSE_ID}/schedule/${SCHEDULE_ID}`);
 
@@ -111,8 +112,8 @@ describe('Stats API', () => {
 
     it('returns 404 when no nurse stats found', async () => {
       queryMock
-        .mockResolvedValueOnce({ rows: [] }) // refresh view
-        .mockResolvedValueOnce({ rows: [] }); // stats lookup
+        .mockResolvedValueOnce(createQueryResult({ rows: [] })) // refresh view
+        .mockResolvedValueOnce(createQueryResult({ rows: [] })); // stats lookup
 
       const res = await request(app).get(`/api/stats/nurse/${NURSE_ID}/schedule/${SCHEDULE_ID}`);
 

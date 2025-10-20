@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryResult } from '../testUtils';
 
 vi.mock('../../db/connection.js', () => ({
   query: vi.fn(),
@@ -17,13 +18,13 @@ describe('ScheduleModel', () => {
   it('retrieves schedules by list, id, and month', async () => {
     const row = { id: 's1', month: '2025-06-01', status: 'draft' };
 
-    queryMock.mockResolvedValueOnce({ rows: [row] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [row] }));
     expect(await ScheduleModel.findAll()).toEqual([row]);
 
-    queryMock.mockResolvedValueOnce({ rows: [row] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [row] }));
     expect(await ScheduleModel.findById('s1')).toEqual(row);
 
-    queryMock.mockResolvedValueOnce({ rows: [row] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [row] }));
     expect(await ScheduleModel.findByMonth('2025-06-01')).toEqual(row);
   });
 
@@ -61,9 +62,9 @@ describe('ScheduleModel', () => {
     ];
 
     queryMock
-      .mockResolvedValueOnce({ rows: [baseSchedule] }) // findById
-      .mockResolvedValueOnce({ rows: shifts }) // shifts
-      .mockResolvedValueOnce({ rows: assignments }); // assignments
+      .mockResolvedValueOnce(createQueryResult({ rows: [baseSchedule] })) // findById
+      .mockResolvedValueOnce(createQueryResult({ rows: shifts })) // shifts
+      .mockResolvedValueOnce(createQueryResult({ rows: assignments })); // assignments
 
     const detail = await ScheduleModel.findDetailById('s2');
     expect(detail?.id).toBe('s2');
@@ -78,7 +79,7 @@ describe('ScheduleModel', () => {
 
   it('creates, updates, deletes, and checks schedule existence', async () => {
     const createdRow = { id: 's3', month: '2025-07-01', status: 'draft' };
-    queryMock.mockResolvedValueOnce({ rows: [createdRow] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [createdRow] }));
     expect(
       await ScheduleModel.create({
         month: '2025-07',
@@ -86,7 +87,7 @@ describe('ScheduleModel', () => {
     ).toEqual(createdRow);
 
     const updatedRow = { id: 's3', status: 'archived' };
-    queryMock.mockResolvedValueOnce({ rows: [updatedRow] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [updatedRow] }));
     expect(
       await ScheduleModel.update('s3', {
         status: 'archived',
@@ -94,33 +95,33 @@ describe('ScheduleModel', () => {
       })
     ).toEqual(updatedRow);
 
-    queryMock.mockResolvedValueOnce({ rows: [createdRow] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [createdRow] }));
     expect(await ScheduleModel.update('s3', {})).toEqual(createdRow);
 
-    queryMock.mockResolvedValueOnce({ rowCount: 1 });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rowCount: 1 }));
     expect(await ScheduleModel.delete('s3')).toBe(true);
 
-    queryMock.mockResolvedValueOnce({ rows: [{ count: '1' }] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [{ count: '1' }] }));
     expect(await ScheduleModel.existsForMonth('2025-07-01')).toBe(true);
   });
 
   it('returns null/false for missing datasets', async () => {
-    queryMock.mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [] }));
     expect(await ScheduleModel.findById('missing')).toBeNull();
 
-    queryMock.mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [] }));
     expect(await ScheduleModel.findByMonth('2025-01-01')).toBeNull();
 
-    queryMock.mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [] }));
     expect(await ScheduleModel.findDetailById('missing')).toBeNull();
 
-    queryMock.mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [] }));
     expect(await ScheduleModel.update('s3', { status: 'draft' })).toBeNull();
 
-    queryMock.mockResolvedValueOnce({ rowCount: 0 });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rowCount: 0 }));
     expect(await ScheduleModel.delete('ghost')).toBe(false);
 
-    queryMock.mockResolvedValueOnce({ rows: [{ count: '0' }] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [{ count: '0' }] }));
     expect(await ScheduleModel.existsForMonth('2025-08-01')).toBe(false);
   });
 });

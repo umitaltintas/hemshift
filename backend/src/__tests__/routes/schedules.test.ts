@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Mock } from 'vitest';
 import app from '../../server';
 import { ScheduleModel } from '../../models/Schedule';
 import { SchedulerService } from '../../services/scheduler.service';
@@ -58,7 +59,7 @@ describe('Schedules API', () => {
   it('POST /api/schedules/generate creates a new schedule', async () => {
     scheduleMock.existsForMonth.mockResolvedValue(false);
     scheduleMock.create.mockResolvedValue({ id: SCHEDULE_ID, month: `${MONTH}-01` } as any);
-    (SchedulerService.prototype.generateSchedule as vi.Mock).mockResolvedValue({
+    (SchedulerService.prototype.generateSchedule as Mock).mockResolvedValue({
       fairness_score: 95,
       shifts: 10,
       assignments: 30,

@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 import app from '../../server';
 import { ShiftModel, ShiftAssignmentModel } from '../../models/Shift';
 import { NurseModel } from '../../models/Nurse';
@@ -26,9 +27,9 @@ describe('Shifts API', () => {
       const mockAssignments = [{ id: ASSIGNMENT_ID, nurse_name: 'Test Nurse' }];
       const mockCounts = { staff_count: 1, responsible_count: 0 };
 
-      (ShiftModel.findBySchedule as vi.Mock).mockResolvedValue(mockShifts);
-      (ShiftAssignmentModel.findByShift as vi.Mock).mockResolvedValue(mockAssignments);
-      (ShiftAssignmentModel.getShiftCounts as vi.Mock).mockResolvedValue(mockCounts);
+      (ShiftModel.findBySchedule as Mock).mockResolvedValue(mockShifts);
+      (ShiftAssignmentModel.findByShift as Mock).mockResolvedValue(mockAssignments);
+      (ShiftAssignmentModel.getShiftCounts as Mock).mockResolvedValue(mockCounts);
 
       const response = await request(app).get(`/api/shifts?schedule_id=${SCHEDULE_ID}`);
 
@@ -40,9 +41,9 @@ describe('Shifts API', () => {
     it('returns shifts for a specific date when provided', async () => {
       const date = '2025-10-20';
       const mockShifts = [{ id: SHIFT_ID, required_staff: 1, requires_responsible: false }];
-      (ShiftModel.findByDate as vi.Mock).mockResolvedValue(mockShifts);
-      (ShiftAssignmentModel.findByShift as vi.Mock).mockResolvedValue([]);
-      (ShiftAssignmentModel.getShiftCounts as vi.Mock).mockResolvedValue({ staff_count: 1, responsible_count: 0 });
+      (ShiftModel.findByDate as Mock).mockResolvedValue(mockShifts);
+      (ShiftAssignmentModel.findByShift as Mock).mockResolvedValue([]);
+      (ShiftAssignmentModel.getShiftCounts as Mock).mockResolvedValue({ staff_count: 1, responsible_count: 0 });
 
       const response = await request(app).get(`/api/shifts?schedule_id=${SCHEDULE_ID}&date=${date}`);
 
@@ -63,9 +64,9 @@ describe('Shifts API', () => {
       const assignments = [{ id: ASSIGNMENT_ID }];
       const counts = { staff_count: 1, responsible_count: 1 };
 
-      (ShiftModel.findById as vi.Mock).mockResolvedValue(shift);
-      (ShiftAssignmentModel.findByShift as vi.Mock).mockResolvedValue(assignments);
-      (ShiftAssignmentModel.getShiftCounts as vi.Mock).mockResolvedValue(counts);
+      (ShiftModel.findById as Mock).mockResolvedValue(shift);
+      (ShiftAssignmentModel.findByShift as Mock).mockResolvedValue(assignments);
+      (ShiftAssignmentModel.getShiftCounts as Mock).mockResolvedValue(counts);
 
       const response = await request(app).get(`/api/shifts/${SHIFT_ID}`);
 
@@ -75,7 +76,7 @@ describe('Shifts API', () => {
     });
 
     it('returns 404 when shift not found', async () => {
-      (ShiftModel.findById as vi.Mock).mockResolvedValue(null);
+      (ShiftModel.findById as Mock).mockResolvedValue(null);
 
       const response = await request(app).get(`/api/shifts/${SHIFT_ID}`);
 
@@ -89,12 +90,12 @@ describe('Shifts API', () => {
     const mockNurse = { id: NURSE_ID, name: 'Nurse Jackie', role: 'staff' };
 
     it('assigns a nurse to a shift successfully', async () => {
-      (ShiftModel.findById as vi.Mock).mockResolvedValue(mockShift);
-      (NurseModel.findById as vi.Mock).mockResolvedValue(mockNurse);
-      (LeaveModel.isNurseOnLeave as vi.Mock).mockResolvedValue(false);
-      (ShiftAssignmentModel.isNurseAssignedOnDate as vi.Mock).mockResolvedValue(false);
-      (ShiftAssignmentModel.getShiftCounts as vi.Mock).mockResolvedValue({ staff_count: 0, responsible_count: 0 });
-      (ShiftAssignmentModel.create as vi.Mock).mockResolvedValue({ id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef' });
+      (ShiftModel.findById as Mock).mockResolvedValue(mockShift);
+      (NurseModel.findById as Mock).mockResolvedValue(mockNurse);
+      (LeaveModel.isNurseOnLeave as Mock).mockResolvedValue(false);
+      (ShiftAssignmentModel.isNurseAssignedOnDate as Mock).mockResolvedValue(false);
+      (ShiftAssignmentModel.getShiftCounts as Mock).mockResolvedValue({ staff_count: 0, responsible_count: 0 });
+      (ShiftAssignmentModel.create as Mock).mockResolvedValue({ id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef' });
 
       const response = await request(app)
         .post(`/api/shifts/${SHIFT_ID}/assign`)
@@ -105,7 +106,7 @@ describe('Shifts API', () => {
     });
 
     it('returns 404 if shift not found', async () => {
-      (ShiftModel.findById as vi.Mock).mockResolvedValue(null);
+      (ShiftModel.findById as Mock).mockResolvedValue(null);
 
       const response = await request(app)
         .post(`/api/shifts/${SHIFT_ID}/assign`)
@@ -116,8 +117,8 @@ describe('Shifts API', () => {
     });
 
     it('returns 404 if nurse not found', async () => {
-      (ShiftModel.findById as vi.Mock).mockResolvedValue(mockShift);
-      (NurseModel.findById as vi.Mock).mockResolvedValue(null);
+      (ShiftModel.findById as Mock).mockResolvedValue(mockShift);
+      (NurseModel.findById as Mock).mockResolvedValue(null);
 
       const response = await request(app)
         .post(`/api/shifts/${SHIFT_ID}/assign`)
@@ -128,9 +129,9 @@ describe('Shifts API', () => {
     });
 
     it('returns 409 if nurse is on leave', async () => {
-        (ShiftModel.findById as vi.Mock).mockResolvedValue(mockShift);
-        (NurseModel.findById as vi.Mock).mockResolvedValue(mockNurse);
-        (LeaveModel.isNurseOnLeave as vi.Mock).mockResolvedValue(true); // Nurse is on leave
+        (ShiftModel.findById as Mock).mockResolvedValue(mockShift);
+        (NurseModel.findById as Mock).mockResolvedValue(mockNurse);
+        (LeaveModel.isNurseOnLeave as Mock).mockResolvedValue(true); // Nurse is on leave
   
         const response = await request(app)
           .post(`/api/shifts/${SHIFT_ID}/assign`)
@@ -141,10 +142,10 @@ describe('Shifts API', () => {
       });
 
       it('returns 409 if nurse already assigned same day', async () => {
-        (ShiftModel.findById as vi.Mock).mockResolvedValue(mockShift);
-        (NurseModel.findById as vi.Mock).mockResolvedValue(mockNurse);
-        (LeaveModel.isNurseOnLeave as vi.Mock).mockResolvedValue(false);
-        (ShiftAssignmentModel.isNurseAssignedOnDate as vi.Mock).mockResolvedValue(true);
+        (ShiftModel.findById as Mock).mockResolvedValue(mockShift);
+        (NurseModel.findById as Mock).mockResolvedValue(mockNurse);
+        (LeaveModel.isNurseOnLeave as Mock).mockResolvedValue(false);
+        (ShiftAssignmentModel.isNurseAssignedOnDate as Mock).mockResolvedValue(true);
 
         const response = await request(app)
           .post(`/api/shifts/${SHIFT_ID}/assign`)
@@ -155,11 +156,11 @@ describe('Shifts API', () => {
       });
 
       it('returns 409 if shift is full', async () => {
-        (ShiftModel.findById as vi.Mock).mockResolvedValue(mockShift);
-        (NurseModel.findById as vi.Mock).mockResolvedValue(mockNurse);
-        (LeaveModel.isNurseOnLeave as vi.Mock).mockResolvedValue(false);
-        (ShiftAssignmentModel.isNurseAssignedOnDate as vi.Mock).mockResolvedValue(false);
-        (ShiftAssignmentModel.getShiftCounts as vi.Mock).mockResolvedValue({ staff_count: 1, responsible_count: 0 }); // Shift is full
+        (ShiftModel.findById as Mock).mockResolvedValue(mockShift);
+        (NurseModel.findById as Mock).mockResolvedValue(mockNurse);
+        (LeaveModel.isNurseOnLeave as Mock).mockResolvedValue(false);
+        (ShiftAssignmentModel.isNurseAssignedOnDate as Mock).mockResolvedValue(false);
+        (ShiftAssignmentModel.getShiftCounts as Mock).mockResolvedValue({ staff_count: 1, responsible_count: 0 }); // Shift is full
   
         const response = await request(app)
           .post(`/api/shifts/${SHIFT_ID}/assign`)
@@ -173,10 +174,10 @@ describe('Shifts API', () => {
         const nightShift = { ...mockShift, type: 'night_16h' };
         const responsibleNurse = { ...mockNurse, role: 'responsible' };
 
-        (ShiftModel.findById as vi.Mock).mockResolvedValue(nightShift);
-        (NurseModel.findById as vi.Mock).mockResolvedValue(responsibleNurse);
-        (LeaveModel.isNurseOnLeave as vi.Mock).mockResolvedValue(false);
-        (ShiftAssignmentModel.isNurseAssignedOnDate as vi.Mock).mockResolvedValue(false);
+        (ShiftModel.findById as Mock).mockResolvedValue(nightShift);
+        (NurseModel.findById as Mock).mockResolvedValue(responsibleNurse);
+        (LeaveModel.isNurseOnLeave as Mock).mockResolvedValue(false);
+        (ShiftAssignmentModel.isNurseAssignedOnDate as Mock).mockResolvedValue(false);
 
         const response = await request(app)
           .post(`/api/shifts/${SHIFT_ID}/assign`)
@@ -188,11 +189,11 @@ describe('Shifts API', () => {
 
       it('returns 409 when responsible slot already filled', async () => {
         const responsibleNurse = { ...mockNurse, role: 'responsible' };
-        (ShiftModel.findById as vi.Mock).mockResolvedValue(mockShift);
-        (NurseModel.findById as vi.Mock).mockResolvedValue(responsibleNurse);
-        (LeaveModel.isNurseOnLeave as vi.Mock).mockResolvedValue(false);
-        (ShiftAssignmentModel.isNurseAssignedOnDate as vi.Mock).mockResolvedValue(false);
-        (ShiftAssignmentModel.getShiftCounts as vi.Mock).mockResolvedValue({ staff_count: 0, responsible_count: 1 });
+        (ShiftModel.findById as Mock).mockResolvedValue(mockShift);
+        (NurseModel.findById as Mock).mockResolvedValue(responsibleNurse);
+        (LeaveModel.isNurseOnLeave as Mock).mockResolvedValue(false);
+        (ShiftAssignmentModel.isNurseAssignedOnDate as Mock).mockResolvedValue(false);
+        (ShiftAssignmentModel.getShiftCounts as Mock).mockResolvedValue({ staff_count: 0, responsible_count: 1 });
 
         const response = await request(app)
           .post(`/api/shifts/${SHIFT_ID}/assign`)
@@ -206,7 +207,7 @@ describe('Shifts API', () => {
 
   describe('DELETE /api/shifts/assignments/:id', () => {
     it('should delete an assignment', async () => {
-        (ShiftAssignmentModel.delete as vi.Mock).mockResolvedValue(true);
+        (ShiftAssignmentModel.delete as Mock).mockResolvedValue(true);
 
         const response = await request(app).delete(`/api/shifts/assignments/${ASSIGNMENT_ID}`);
 
@@ -216,7 +217,7 @@ describe('Shifts API', () => {
     });
 
     it('should return 404 if assignment not found', async () => {
-        (ShiftAssignmentModel.delete as vi.Mock).mockResolvedValue(false);
+        (ShiftAssignmentModel.delete as Mock).mockResolvedValue(false);
 
         const response = await request(app).delete(`/api/shifts/assignments/${ASSIGNMENT_ID}`);
 

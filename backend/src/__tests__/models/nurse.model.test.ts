@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryResult } from '../testUtils';
 
 vi.mock('../../db/connection.js', () => ({
   query: vi.fn(),
@@ -16,14 +17,14 @@ describe('NurseModel', () => {
   it('retrieves collections and individual nurses', async () => {
     const nurseRow = { id: 'n1', name: 'Alice', role: 'staff' };
 
-    queryMock.mockResolvedValueOnce({ rows: [nurseRow] }); // findAll
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [nurseRow] })); // findAll
     const all = await NurseModel.findAll();
     expect(all).toEqual([nurseRow]);
     expect(queryMock).toHaveBeenLastCalledWith(
       'SELECT * FROM nurses ORDER BY role DESC, name ASC'
     );
 
-    queryMock.mockResolvedValueOnce({ rows: [nurseRow] }); // findById
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [nurseRow] })); // findById
     const byId = await NurseModel.findById('n1');
     expect(byId).toEqual(nurseRow);
     expect(queryMock).toHaveBeenLastCalledWith(
@@ -31,13 +32,13 @@ describe('NurseModel', () => {
       ['n1']
     );
 
-    queryMock.mockResolvedValueOnce({ rows: [nurseRow] }); // findResponsible
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [nurseRow] })); // findResponsible
     await NurseModel.findResponsible();
     expect(queryMock).toHaveBeenLastCalledWith(
       "SELECT * FROM nurses WHERE role = 'responsible' LIMIT 1"
     );
 
-    queryMock.mockResolvedValueOnce({ rows: [nurseRow] }); // findStaff
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [nurseRow] })); // findStaff
     await NurseModel.findStaff();
     expect(queryMock).toHaveBeenLastCalledWith(
       "SELECT * FROM nurses WHERE role = 'staff' ORDER BY name ASC"
@@ -46,7 +47,7 @@ describe('NurseModel', () => {
 
   it('creates, updates, and deletes nurses', async () => {
     const created = { id: 'n2', name: 'Bob', role: 'staff' };
-    queryMock.mockResolvedValueOnce({ rows: [created] }); // create
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [created] })); // create
     const result = await NurseModel.create({ name: 'Bob', role: 'staff' });
     expect(result).toEqual(created);
     expect(queryMock).toHaveBeenLastCalledWith(
@@ -55,7 +56,7 @@ describe('NurseModel', () => {
     );
 
     const updated = { id: 'n2', name: 'Robert', role: 'staff' };
-    queryMock.mockResolvedValueOnce({ rows: [updated] }); // update
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [updated] })); // update
     const updateResult = await NurseModel.update('n2', { name: 'Robert' });
     expect(updateResult).toEqual(updated);
     expect(queryMock).toHaveBeenLastCalledWith(
@@ -63,7 +64,7 @@ describe('NurseModel', () => {
       ['Robert', 'n2']
     );
 
-    queryMock.mockResolvedValueOnce({ rowCount: 1 }); // delete
+    queryMock.mockResolvedValueOnce(createQueryResult({ rowCount: 1 })); // delete
     const deleteResult = await NurseModel.delete('n2');
     expect(deleteResult).toBe(true);
     expect(queryMock).toHaveBeenLastCalledWith(
@@ -74,7 +75,7 @@ describe('NurseModel', () => {
 
   it('falls back to findById when update input is empty', async () => {
     const existing = { id: 'n3', name: 'Cara', role: 'staff' };
-    queryMock.mockResolvedValueOnce({ rows: [existing] }); // findById via update fallback
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [existing] })); // findById via update fallback
     const result = await NurseModel.update('n3', {});
     expect(result).toEqual(existing);
     expect(queryMock).toHaveBeenCalledTimes(1);
@@ -85,33 +86,33 @@ describe('NurseModel', () => {
   });
 
   it('evaluates helper counters correctly', async () => {
-    queryMock.mockResolvedValueOnce({ rows: [{ count: '1' }] }); // hasResponsible true
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [{ count: '1' }] })); // hasResponsible true
     const hasResp = await NurseModel.hasResponsible();
     expect(hasResp).toBe(true);
 
-    queryMock.mockResolvedValueOnce({ rows: [{ count: '0' }] }); // hasResponsible false
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [{ count: '0' }] })); // hasResponsible false
     const hasRespFalse = await NurseModel.hasResponsible();
     expect(hasRespFalse).toBe(false);
 
-    queryMock.mockResolvedValueOnce({ rows: [{ count: '3' }] }); // countStaff
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [{ count: '3' }] })); // countStaff
     const staffCount = await NurseModel.countStaff();
-   expect(staffCount).toBe(3);
+    expect(staffCount).toBe(3);
   });
 
   it('handles missing data gracefully', async () => {
-    queryMock.mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [] }));
     expect(await NurseModel.findById('missing')).toBeNull();
 
-    queryMock.mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [] }));
     expect(await NurseModel.findResponsible()).toBeNull();
 
-    queryMock.mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [] }));
     expect(await NurseModel.update('ghost', { name: 'Nope' })).toBeNull();
 
-    queryMock.mockResolvedValueOnce({ rowCount: 0 });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rowCount: 0 }));
     expect(await NurseModel.delete('ghost')).toBe(false);
 
-    queryMock.mockResolvedValueOnce({ rows: [{ count: '0' }] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [{ count: '0' }] }));
     expect(await NurseModel.countStaff()).toBe(0);
   });
 });

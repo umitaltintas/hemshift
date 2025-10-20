@@ -9,7 +9,7 @@ import { NurseModel } from '../models/Nurse.js'
 import { LeaveModel } from '../models/Leave.js'
 import { ShiftModel, ShiftAssignmentModel } from '../models/Shift.js'
 import { ScheduleModel } from '../models/Schedule.js'
-import type { Nurse, Leave, ShiftType } from '@shared/types/index.js'
+import type { ApiNurse, ApiLeave, ShiftType } from '../types/api.js'
 import {
   getMonthDates,
   formatDate,
@@ -35,7 +35,7 @@ interface DayInfo {
 }
 
 interface NurseStats {
-  nurse: Nurse
+  nurse: ApiNurse
   totalHours: number
   nightShiftCount: number
   weekendShiftCount: number
@@ -64,9 +64,9 @@ interface Assignment {
 // =============================================================================
 
 export class SchedulerService {
-  private responsibleNurse: Nurse | null = null
-  private staffNurses: Nurse[] = []
-  private leaves: Leave[] = []
+  private responsibleNurse: ApiNurse | null = null
+  private staffNurses: ApiNurse[] = []
+  private leaves: ApiLeave[] = []
   private nurseStats: Map<string, NurseStats> = new Map()
   private scheduleId: string = ''
   private monthDates: DayInfo[] = []
@@ -392,7 +392,7 @@ export class SchedulerService {
   /**
    * Get eligible staff nurses for day shift
    */
-  private getEligibleStaffForDay(day: DayInfo, shiftType: 'day' | 'night' = 'day'): Nurse[] {
+  private getEligibleStaffForDay(day: DayInfo, _shiftType: 'day' | 'night' = 'day'): ApiNurse[] {
     return this.staffNurses.filter((nurse) => {
       // On leave?
       if (this.isNurseOnLeave(nurse.id, day.dateStr)) {
@@ -418,7 +418,7 @@ export class SchedulerService {
   /**
    * Get eligible staff nurses for night shift
    */
-  private getEligibleStaffForNight(day: DayInfo): Nurse[] {
+  private getEligibleStaffForNight(day: DayInfo): ApiNurse[] {
     return this.staffNurses.filter((nurse) => {
       // On leave?
       if (this.isNurseOnLeave(nurse.id, day.dateStr)) {
@@ -462,7 +462,7 @@ export class SchedulerService {
   /**
    * Get eligible staff nurses for weekend shift
    */
-  private getEligibleStaffForWeekend(day: DayInfo): Nurse[] {
+  private getEligibleStaffForWeekend(day: DayInfo): ApiNurse[] {
     return this.staffNurses.filter((nurse) => {
       // On leave?
       if (this.isNurseOnLeave(nurse.id, day.dateStr)) {
@@ -497,10 +497,10 @@ export class SchedulerService {
    * Lower score = higher priority
    */
   private selectNursesByPriority(
-    nurses: Nurse[],
+    nurses: ApiNurse[],
     day: DayInfo,
     count: number
-  ): Nurse[] {
+  ): ApiNurse[] {
     const scored = nurses.map((nurse) => ({
       nurse,
       score: this.calculatePriorityScore(nurse, day)
@@ -516,7 +516,7 @@ export class SchedulerService {
    * Calculate priority score for a nurse
    * Lower score = higher priority (should be assigned)
    */
-  private calculatePriorityScore(nurse: Nurse, day: DayInfo): number {
+  private calculatePriorityScore(nurse: ApiNurse, day: DayInfo): number {
     const stats = this.nurseStats.get(nurse.id)!
     let score = 0
 
@@ -602,9 +602,12 @@ export class SchedulerService {
    */
   private isNurseOnLeave(nurseId: string, dateStr: string): boolean {
     return this.leaves.some((leave) => {
-      const normalized = leave as Leave & {
+      const normalized = leave as ApiLeave & {
+        nurseId?: string
         nurse_id?: string
+        startDate?: string
         start_date?: string
+        endDate?: string
         end_date?: string
       }
 

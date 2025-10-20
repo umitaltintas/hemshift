@@ -1,5 +1,5 @@
 import { query } from '../db/connection.js'
-import type { Leave, CreateLeaveInput, UpdateLeaveInput } from '@shared/types/index.js'
+import type { ApiLeave, CreateLeaveInput, UpdateLeaveInput } from '../types/api.js'
 
 export class LeaveModel {
   /**
@@ -8,7 +8,7 @@ export class LeaveModel {
   static async findAll(filters?: {
     nurse_id?: string
     month?: string // YYYY-MM
-  }): Promise<Leave[]> {
+  }): Promise<ApiLeave[]> {
     let sql = `
       SELECT l.*, n.name as nurse_name
       FROM leaves l
@@ -41,15 +41,15 @@ export class LeaveModel {
 
     sql += ' ORDER BY l.start_date DESC'
 
-    const result = await query<Leave>(sql, params)
+    const result = await query<ApiLeave>(sql, params)
     return result.rows
   }
 
   /**
    * Get leave by ID
    */
-  static async findById(id: string): Promise<Leave | null> {
-    const result = await query<Leave>(
+  static async findById(id: string): Promise<ApiLeave | null> {
+    const result = await query<ApiLeave>(
       `SELECT l.*, n.name as nurse_name
        FROM leaves l
        JOIN nurses n ON l.nurse_id = n.id
@@ -66,8 +66,8 @@ export class LeaveModel {
     nurseId: string,
     startDate: string,
     endDate: string
-  ): Promise<Leave[]> {
-    const result = await query<Leave>(
+  ): Promise<ApiLeave[]> {
+    const result = await query<ApiLeave>(
       `SELECT l.*, n.name as nurse_name
        FROM leaves l
        JOIN nurses n ON l.nurse_id = n.id
@@ -102,8 +102,8 @@ export class LeaveModel {
   /**
    * Create new leave
    */
-  static async create(input: CreateLeaveInput): Promise<Leave> {
-    const result = await query<Leave>(
+  static async create(input: CreateLeaveInput): Promise<ApiLeave> {
+    const result = await query<ApiLeave>(
       `INSERT INTO leaves (nurse_id, type, start_date, end_date, notes)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
@@ -111,13 +111,13 @@ export class LeaveModel {
     )
 
     // Fetch with nurse_name
-    return this.findById(result.rows[0].id) as Promise<Leave>
+    return this.findById(result.rows[0].id) as Promise<ApiLeave>
   }
 
   /**
    * Update leave
    */
-  static async update(id: string, input: UpdateLeaveInput): Promise<Leave | null> {
+  static async update(id: string, input: UpdateLeaveInput): Promise<ApiLeave | null> {
     const updates: string[] = []
     const values: any[] = []
     let paramIndex = 1

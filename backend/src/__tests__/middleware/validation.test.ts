@@ -19,10 +19,10 @@ describe('validation middleware', () => {
   it('parses and replaces request body when schema succeeds', async () => {
     const schema = createNurseSchema;
     const validator = validate(schema);
-    const next = vi.fn<Parameters<NextFunction>, void>();
+    const next = vi.fn();
 
     const req = buildReq({ name: 'Ayşe', role: 'staff' });
-    await validator(req, noopRes, next);
+    await validator(req, noopRes, next as unknown as NextFunction);
 
     expect(req.body).toEqual({ name: 'Ayşe', role: 'staff' });
     expect(next).toHaveBeenCalledOnce();
@@ -32,10 +32,10 @@ describe('validation middleware', () => {
   it('wraps zod validation errors into ValidationError with fallback message', async () => {
     const schema = createNurseSchema;
     const validator = validate(schema);
-    const next = vi.fn<Parameters<NextFunction>, void>();
+    const next = vi.fn();
 
     const req = buildReq({ name: 'A', role: 'manager' });
-    await validator(req, noopRes, next);
+    await validator(req, noopRes, next as unknown as NextFunction);
 
     expect(next).toHaveBeenCalledOnce();
     const [err] = next.mock.calls[0];
@@ -59,9 +59,9 @@ describe('validation middleware', () => {
     } as unknown as z.ZodSchema;
 
     const validator = validate(schema);
-    const next = vi.fn<Parameters<NextFunction>, void>();
+    const next = vi.fn();
 
-    await validator(buildReq({}), noopRes, next);
+    await validator(buildReq({}), noopRes, next as unknown as NextFunction);
 
     const [err] = next.mock.calls[0];
     expect(err).toBeInstanceOf(ValidationError);
@@ -77,9 +77,9 @@ describe('validation middleware', () => {
     } as unknown as z.ZodSchema;
 
     const validator = validate(schema);
-    const next = vi.fn<Parameters<NextFunction>, void>();
+    const next = vi.fn();
 
-    await validator(buildReq({}), noopRes, next);
+    await validator(buildReq({}), noopRes, next as unknown as NextFunction);
 
     const [err] = next.mock.calls[0];
     expect(err).toBeInstanceOf(ValidationError);
@@ -93,9 +93,9 @@ describe('validation middleware', () => {
     } as unknown as z.ZodSchema;
 
     const validator = validate(schema);
-    const next = vi.fn<Parameters<NextFunction>, void>();
+    const next = vi.fn();
 
-    await validator(buildReq({}), noopRes, next);
+    await validator(buildReq({}), noopRes, next as unknown as NextFunction);
 
     expect(next).toHaveBeenCalledOnce();
     expect(next).toHaveBeenCalledWith(boom);
@@ -105,9 +105,9 @@ describe('validation middleware', () => {
 describe('validateUUID helper', () => {
   it('allows valid UUID values', () => {
     const handler = validateUUID('id');
-    const next = vi.fn<Parameters<NextFunction>, void>();
+    const next = vi.fn();
 
-    handler(buildReq({}, { id: '123e4567-e89b-12d3-a456-426614174000' }), noopRes, next);
+    handler(buildReq({}, { id: '123e4567-e89b-12d3-a456-426614174000' }), noopRes, next as unknown as NextFunction);
 
     expect(next).toHaveBeenCalledOnce();
     expect(next).toHaveBeenCalledWith();
@@ -115,9 +115,9 @@ describe('validateUUID helper', () => {
 
   it('rejects missing or malformed UUID values', () => {
     const handler = validateUUID('id');
-    const next = vi.fn<Parameters<NextFunction>, void>();
+    const next = vi.fn();
 
-    handler(buildReq({}, { id: 'not-a-uuid' }), noopRes, next);
+    handler(buildReq({}, { id: 'not-a-uuid' }), noopRes, next as unknown as NextFunction);
     const [err] = next.mock.calls.at(-1)!;
     expect(err).toBeInstanceOf(ValidationError);
     expect(err?.message).toBe('Geçersiz id');

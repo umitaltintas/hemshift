@@ -2,9 +2,14 @@ import { Router, Request, Response, NextFunction } from 'express'
 import { query } from '../db/connection.js'
 import { validateUUID } from '../middleware/validation.js'
 import { NotFoundError } from '../middleware/errorHandler.js'
-import type { NurseMonthlyStats, MonthlyStatistics, FairnessScore } from '@shared/types/index.js'
+import type {
+  NurseMonthlyStats,
+  MonthlyStatistics,
+  FairnessScoreRow,
+  FairnessScore
+} from '../types/api.js'
 
-const router = Router()
+const router: Router = Router()
 
 /**
  * GET /api/stats/monthly/:schedule_id
@@ -44,22 +49,30 @@ router.get(
 
       // Separate staff and responsible stats
       const staffStats = nurseStats.filter((s) => s.nurse_role === 'staff')
-      const responsibleStats = nurseStats.filter((s) => s.nurse_role === 'responsible')
-
       // Calculate fairness score (only for staff)
-      const fairnessResult = await query<FairnessScore>(
+      const fairnessResult = await query<FairnessScoreRow>(
         'SELECT * FROM calculate_fairness_score($1)',
         [schedule_id]
       )
 
-      const fairnessScore = fairnessResult.rows[0] || {
-        overall: 0,
+      const fairnessScore = fairnessResult.rows[0] ?? {
+        fairness_score: 0,
         hours_score: 0,
         nights_score: 0,
         weekends_score: 0,
         hours_std_dev: 0,
         nights_std_dev: 0,
         weekends_std_dev: 0
+      }
+
+      const apiFairnessScore: FairnessScore = {
+        overall: fairnessScore.fairness_score ?? 0,
+        hours_score: fairnessScore.hours_score ?? 0,
+        nights_score: fairnessScore.nights_score ?? 0,
+        weekends_score: fairnessScore.weekends_score ?? 0,
+        hours_std_dev: fairnessScore.hours_std_dev ?? 0,
+        nights_std_dev: fairnessScore.nights_std_dev ?? 0,
+        weekends_std_dev: fairnessScore.weekends_std_dev ?? 0
       }
 
       // Calculate averages (only for staff)
@@ -81,15 +94,7 @@ router.get(
       const response: MonthlyStatistics = {
         schedule_id,
         month: schedule.month,
-        fairness_score: {
-          overall: fairnessScore.fairness_score || 0,
-          hours_score: fairnessScore.hours_score || 0,
-          nights_score: fairnessScore.nights_score || 0,
-          weekends_score: fairnessScore.weekends_score || 0,
-          hours_std_dev: fairnessScore.hours_std_dev || 0,
-          nights_std_dev: fairnessScore.nights_std_dev || 0,
-          weekends_std_dev: fairnessScore.weekends_std_dev || 0
-        },
+        fairness_score: apiFairnessScore,
         nurses: nurseStats,
         averages: {
           staff_avg_hours: Math.round(avgHours * 100) / 100,

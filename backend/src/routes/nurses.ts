@@ -3,13 +3,13 @@ import { NurseModel } from '../models/Nurse.js'
 import { validate, validateUUID, createNurseSchema, updateNurseSchema } from '../middleware/validation.js'
 import { NotFoundError, ConflictError } from '../middleware/errorHandler.js'
 
-const router = Router()
+const router: Router = Router()
 
 /**
  * GET /api/nurses
  * Get all nurses
  */
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const nurses = await NurseModel.findAll()
     res.json({
@@ -25,7 +25,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
  * GET /api/nurses/responsible
  * Get responsible nurse
  */
-router.get('/responsible', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/responsible', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const nurse = await NurseModel.findResponsible()
     if (!nurse) {
@@ -44,7 +44,7 @@ router.get('/responsible', async (req: Request, res: Response, next: NextFunctio
  * GET /api/nurses/staff
  * Get all staff nurses
  */
-router.get('/staff', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/staff', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const nurses = await NurseModel.findStaff()
     res.json({

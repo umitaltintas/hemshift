@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { type Express, type Request, type Response } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { errorHandler } from './middleware/errorHandler.js'
@@ -13,7 +13,7 @@ import statsRoutes from './routes/stats.js'
 // Load environment variables
 dotenv.config()
 
-const app = express()
+const app: Express = express()
 const PORT = process.env.PORT || 8080
 
 // Middleware
@@ -21,7 +21,7 @@ app.use(cors())
 app.use(express.json())
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -30,7 +30,7 @@ app.get('/health', (req, res) => {
 })
 
 // API routes
-app.get('/api', (req, res) => {
+app.get('/api', (_req: Request, res: Response) => {
   res.json({
     message: 'Shift Planner API v1.0',
     docs: '/api/docs',

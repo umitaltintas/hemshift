@@ -9,7 +9,7 @@ import {
 } from '../middleware/validation.js'
 import { NotFoundError, ConflictError } from '../middleware/errorHandler.js'
 
-const router = Router()
+const router: Router = Router()
 
 /**
  * GET /api/shifts

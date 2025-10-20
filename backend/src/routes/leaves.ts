@@ -4,7 +4,7 @@ import { NurseModel } from '../models/Nurse.js'
 import { validate, validateUUID, createLeaveSchema, updateLeaveSchema } from '../middleware/validation.js'
 import { NotFoundError } from '../middleware/errorHandler.js'
 
-const router = Router()
+const router: Router = Router()
 
 /**
  * GET /api/leaves

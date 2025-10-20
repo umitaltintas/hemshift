@@ -21,7 +21,7 @@ export function isWeekend(date: Date): boolean {
  * Check if date is a Turkish public holiday
  * TODO: Implement actual holiday calendar
  */
-export function isHoliday(date: Date): boolean {
+export function isHoliday(_date: Date): boolean {
   // For now, no holidays
   // Future: Add Turkish public holidays
   return false

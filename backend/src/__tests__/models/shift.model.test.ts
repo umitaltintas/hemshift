@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createQueryResult } from '../testUtils';
 
 vi.mock('../../db/connection.js', () => ({
   query: vi.fn(),
@@ -17,20 +18,20 @@ describe('ShiftModel', () => {
   it('fetches shifts and performs basic mutations', async () => {
     const shift = { id: 'shift1' };
 
-    queryMock.mockResolvedValueOnce({ rows: [shift] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [shift] }));
     expect(await ShiftModel.findBySchedule('s1')).toEqual([shift]);
     expect(queryMock).toHaveBeenLastCalledWith(
       'SELECT * FROM shifts WHERE schedule_id = $1 ORDER BY date, type',
       ['s1']
     );
 
-    queryMock.mockResolvedValueOnce({ rows: [shift] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [shift] }));
     expect(await ShiftModel.findById('shift1')).toEqual(shift);
 
-    queryMock.mockResolvedValueOnce({ rows: [shift] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [shift] }));
     expect(await ShiftModel.findByDate('s1', '2025-08-12')).toEqual([shift]);
 
-    queryMock.mockResolvedValueOnce({ rows: [shift] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [shift] }));
     expect(
       await ShiftModel.create({
         schedule_id: 's1',
@@ -41,7 +42,7 @@ describe('ShiftModel', () => {
       })
     ).toEqual(shift);
 
-    queryMock.mockResolvedValueOnce({ rows: [shift] });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rows: [shift] }));
     expect(
       await ShiftModel.createMany([
         {
@@ -54,10 +55,10 @@ describe('ShiftModel', () => {
       ])
     ).toEqual([shift]);
 
-    queryMock.mockResolvedValueOnce({ rowCount: 1 });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rowCount: 1 }));
     expect(await ShiftModel.delete('shift1')).toBe(true);
 
-    queryMock.mockResolvedValueOnce({ rowCount: 2 });
+    queryMock.mockResolvedValueOnce(createQueryResult({ rowCount: 2 }));
     expect(await ShiftModel.deleteBySchedule('s1')).toBe(2);
   });
 

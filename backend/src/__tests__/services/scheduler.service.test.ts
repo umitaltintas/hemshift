@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { SchedulerService } from '../../services/scheduler.service';
 import { NurseModel } from '../../models/Nurse';
 import { LeaveModel } from '../../models/Leave';
@@ -31,27 +32,27 @@ describe('SchedulerService', () => {
     schedulerService = new SchedulerService();
 
     // Provide default mock implementations for dateUtils
-    (dateUtils.parseMonth as vi.Mock).mockImplementation((month: string) => {
+    (dateUtils.parseMonth as Mock).mockImplementation((month: string) => {
       const [year, monthNum] = month.split('-').map(Number);
       return new Date(year, monthNum - 1, 1);
     });
-    (dateUtils.getMonthDates as vi.Mock).mockImplementation((year: number, month: number) => {
+    (dateUtils.getMonthDates as Mock).mockImplementation((year: number, month: number) => {
       const days = new Date(year, month + 1, 0).getDate();
       return Array.from({ length: days }, (_, i) => new Date(year, month, i + 1));
     });
-    (dateUtils.formatDate as vi.Mock).mockImplementation((date: Date) => date.toISOString().split('T')[0]);
-    (dateUtils.isWeekend as vi.Mock).mockImplementation(d => [6, 0].includes(d.getDay()));
-    (dateUtils.isHoliday as vi.Mock).mockReturnValue(false);
+    (dateUtils.formatDate as Mock).mockImplementation((date: Date) => date.toISOString().split('T')[0]);
+    (dateUtils.isWeekend as Mock).mockImplementation((d: Date) => [6, 0].includes(d.getDay()));
+    (dateUtils.isHoliday as Mock).mockReturnValue(false);
   });
 
   describe('generateSchedule', () => {
     it('should generate a schedule successfully under ideal conditions', async () => {
       // Arrange: Mock all model methods that will be called
       const mockDates = Array.from({ length: 31 }, (_, i) => new Date(2025, 9, i + 1));
-      (dateUtils.getMonthDates as vi.Mock).mockReturnValue(mockDates);
-      (dateUtils.formatDate as vi.Mock).mockImplementation((date: Date) => date.toISOString().split('T')[0]);
-      (dateUtils.isWeekend as vi.Mock).mockReturnValue(false);
-      (dateUtils.isHoliday as vi.Mock).mockReturnValue(false);
+      (dateUtils.getMonthDates as Mock).mockReturnValue(mockDates);
+      (dateUtils.formatDate as Mock).mockImplementation((date: Date) => date.toISOString().split('T')[0]);
+      (dateUtils.isWeekend as Mock).mockReturnValue(false);
+      (dateUtils.isHoliday as Mock).mockReturnValue(false);
 
       // 1. Initialize
       const mockResponsibleNurse = { id: 'resp1', name: 'Resp Nurse', role: 'responsible' };
@@ -61,9 +62,9 @@ describe('SchedulerService', () => {
         { id: 'staff3', name: 'C', role: 'staff' },
         { id: 'staff4', name: 'D', role: 'staff' },
       ];
-      (NurseModel.findResponsible as vi.Mock).mockResolvedValue(mockResponsibleNurse);
-      (NurseModel.findStaff as vi.Mock).mockResolvedValue(mockStaffNurses);
-      (LeaveModel.findAll as vi.Mock).mockResolvedValue([]); // No leaves
+      (NurseModel.findResponsible as Mock).mockResolvedValue(mockResponsibleNurse);
+      (NurseModel.findStaff as Mock).mockResolvedValue(mockStaffNurses);
+      (LeaveModel.findAll as Mock).mockResolvedValue([]); // No leaves
 
       // 2. Create Shifts
       const mockCreatedShifts = [
@@ -72,13 +73,13 @@ describe('SchedulerService', () => {
         { id: 'shift3', date: '2025-10-02', type: 'day_8h' },
         { id: 'shift4', date: '2025-10-02', type: 'night_16h' },
       ];
-      (ShiftModel.createMany as vi.Mock).mockResolvedValue(mockCreatedShifts);
+      (ShiftModel.createMany as Mock).mockResolvedValue(mockCreatedShifts);
 
       // 3. Assign Nurses
-      (ShiftAssignmentModel.createMany as vi.Mock).mockResolvedValue(8); // 4 shifts * 2 assignments each
+      (ShiftAssignmentModel.createMany as Mock).mockResolvedValue(8); // 4 shifts * 2 assignments each
 
       // 4. Update Schedule
-      (ScheduleModel.update as vi.Mock).mockResolvedValue({ id: 'schedule1' });
+      (ScheduleModel.update as Mock).mockResolvedValue({ id: 'schedule1' });
 
       // Act
       const result = await schedulerService.generateSchedule('schedule1', '2025-10');
@@ -99,15 +100,15 @@ describe('SchedulerService', () => {
 
     it('should throw an error if no responsible nurse is found', async () => {
         // Arrange
-        (NurseModel.findResponsible as vi.Mock).mockResolvedValue(null);
+        (NurseModel.findResponsible as Mock).mockResolvedValue(null);
   
         // Act & Assert
         await expect(schedulerService.generateSchedule('schedule1', '2025-10')).rejects.toThrow('Sorumlu hemşire bulunamadı');
       });
 
     it('should require at least two staff nurses', async () => {
-      (NurseModel.findResponsible as vi.Mock).mockResolvedValue({ id: 'resp', role: 'responsible' });
-      (NurseModel.findStaff as vi.Mock).mockResolvedValue([{ id: 'staff1', role: 'staff' }]);
+      (NurseModel.findResponsible as Mock).mockResolvedValue({ id: 'resp', role: 'responsible' });
+      (NurseModel.findStaff as Mock).mockResolvedValue([{ id: 'staff1', role: 'staff' }]);
 
       await expect(schedulerService.generateSchedule('schedule1', '2025-10'))
         .rejects.toThrow('En az 2 staf hemşire gerekli');
@@ -122,10 +123,10 @@ describe('SchedulerService', () => {
 
       // Mock date functions to have a predictable calendar
       const mockDates = Array.from({ length: 31 }, (_, i) => new Date(2025, 2, i + 1));
-      (dateUtils.getMonthDates as vi.Mock).mockReturnValue(mockDates);
-      (dateUtils.formatDate as vi.Mock).mockImplementation((date: Date) => date.toISOString().split('T')[0]);
-      (dateUtils.isWeekend as vi.Mock).mockImplementation(d => [6, 0].includes(d.getDay()));
-      (dateUtils.isHoliday as vi.Mock).mockReturnValue(false);
+      (dateUtils.getMonthDates as Mock).mockReturnValue(mockDates);
+      (dateUtils.formatDate as Mock).mockImplementation((date: Date) => date.toISOString().split('T')[0]);
+      (dateUtils.isWeekend as Mock).mockImplementation((d: Date) => [6, 0].includes(d.getDay()));
+      (dateUtils.isHoliday as Mock).mockReturnValue(false);
 
       const responsibleNurse = { id: 'resp1', name: 'Resp Nurse', role: 'responsible' };
       const staffNurses = [
@@ -138,9 +139,9 @@ describe('SchedulerService', () => {
       const leaveStartDate = '2025-03-10';
       const leaveEndDate = '2025-03-11';
 
-      (NurseModel.findResponsible as vi.Mock).mockResolvedValue(responsibleNurse);
-      (NurseModel.findStaff as vi.Mock).mockResolvedValue(staffNurses);
-      (LeaveModel.findAll as vi.Mock).mockResolvedValue([
+      (NurseModel.findResponsible as Mock).mockResolvedValue(responsibleNurse);
+      (NurseModel.findStaff as Mock).mockResolvedValue(staffNurses);
+      (LeaveModel.findAll as Mock).mockResolvedValue([
         { nurseId: nurseOnLeave.id, startDate: leaveStartDate, endDate: leaveEndDate, type: 'annual' },
       ]);
 
@@ -168,8 +169,8 @@ describe('SchedulerService', () => {
           });
         }
       }
-      (ShiftModel.createMany as vi.Mock).mockResolvedValue(createdShifts);
-      (ScheduleModel.update as vi.Mock).mockResolvedValue({ id: scheduleId });
+      (ShiftModel.createMany as Mock).mockResolvedValue(createdShifts);
+      (ScheduleModel.update as Mock).mockResolvedValue({ id: scheduleId });
 
       const createManySpy = vi.spyOn(ShiftAssignmentModel, 'createMany');
 

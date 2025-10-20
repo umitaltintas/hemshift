@@ -1,12 +1,12 @@
 import { query } from '../db/connection.js'
-import type { Nurse, CreateNurseInput, UpdateNurseInput } from '@shared/types/index.js'
+import type { ApiNurse, CreateNurseInput, UpdateNurseInput } from '../types/api.js'
 
 export class NurseModel {
   /**
    * Get all nurses
    */
-  static async findAll(): Promise<Nurse[]> {
-    const result = await query<Nurse>(
+  static async findAll(): Promise<ApiNurse[]> {
+    const result = await query<ApiNurse>(
       'SELECT * FROM nurses ORDER BY role DESC, name ASC'
     )
     return result.rows
@@ -15,8 +15,8 @@ export class NurseModel {
   /**
    * Get nurse by ID
    */
-  static async findById(id: string): Promise<Nurse | null> {
-    const result = await query<Nurse>(
+  static async findById(id: string): Promise<ApiNurse | null> {
+    const result = await query<ApiNurse>(
       'SELECT * FROM nurses WHERE id = $1',
       [id]
     )
@@ -26,8 +26,8 @@ export class NurseModel {
   /**
    * Get responsible nurse
    */
-  static async findResponsible(): Promise<Nurse | null> {
-    const result = await query<Nurse>(
+  static async findResponsible(): Promise<ApiNurse | null> {
+    const result = await query<ApiNurse>(
       "SELECT * FROM nurses WHERE role = 'responsible' LIMIT 1"
     )
     return result.rows[0] || null
@@ -36,8 +36,8 @@ export class NurseModel {
   /**
    * Get all staff nurses
    */
-  static async findStaff(): Promise<Nurse[]> {
-    const result = await query<Nurse>(
+  static async findStaff(): Promise<ApiNurse[]> {
+    const result = await query<ApiNurse>(
       "SELECT * FROM nurses WHERE role = 'staff' ORDER BY name ASC"
     )
     return result.rows
@@ -46,8 +46,8 @@ export class NurseModel {
   /**
    * Create new nurse
    */
-  static async create(input: CreateNurseInput): Promise<Nurse> {
-    const result = await query<Nurse>(
+  static async create(input: CreateNurseInput): Promise<ApiNurse> {
+    const result = await query<ApiNurse>(
       `INSERT INTO nurses (name, role)
        VALUES ($1, $2)
        RETURNING *`,
@@ -59,7 +59,7 @@ export class NurseModel {
   /**
    * Update nurse
    */
-  static async update(id: string, input: UpdateNurseInput): Promise<Nurse | null> {
+  static async update(id: string, input: UpdateNurseInput): Promise<ApiNurse | null> {
     const updates: string[] = []
     const values: any[] = []
     let paramIndex = 1
@@ -75,7 +75,7 @@ export class NurseModel {
     }
 
     values.push(id)
-    const result = await query<Nurse>(
+    const result = await query<ApiNurse>(
       `UPDATE nurses
        SET ${updates.join(', ')}, updated_at = NOW()
        WHERE id = $${paramIndex}

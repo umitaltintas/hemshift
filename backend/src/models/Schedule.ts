@@ -1,19 +1,20 @@
 import { query } from '../db/connection.js'
 import type {
-  Schedule,
+  ApiSchedule,
   CreateScheduleInput,
   UpdateScheduleInput,
   ScheduleDetail,
   DaySchedule,
-  ShiftWithAssignments
-} from '@shared/types/index.js'
+  ShiftWithAssignments,
+  ApiShiftAssignment
+} from '../types/api.js'
 
 export class ScheduleModel {
   /**
    * Get all schedules
    */
-  static async findAll(): Promise<Schedule[]> {
-    const result = await query<Schedule>(
+  static async findAll(): Promise<ApiSchedule[]> {
+    const result = await query<ApiSchedule>(
       'SELECT * FROM schedules ORDER BY month DESC'
     )
     return result.rows
@@ -22,8 +23,8 @@ export class ScheduleModel {
   /**
    * Get schedule by ID
    */
-  static async findById(id: string): Promise<Schedule | null> {
-    const result = await query<Schedule>(
+  static async findById(id: string): Promise<ApiSchedule | null> {
+    const result = await query<ApiSchedule>(
       'SELECT * FROM schedules WHERE id = $1',
       [id]
     )
@@ -33,8 +34,8 @@ export class ScheduleModel {
   /**
    * Get schedule by month (YYYY-MM-DD format)
    */
-  static async findByMonth(month: string): Promise<Schedule | null> {
-    const result = await query<Schedule>(
+  static async findByMonth(month: string): Promise<ApiSchedule | null> {
+    const result = await query<ApiSchedule>(
       'SELECT * FROM schedules WHERE month = $1',
       [month]
     )
@@ -64,7 +65,7 @@ export class ScheduleModel {
     )
 
     // Get all assignments
-    const assignmentsResult = await query<any>(
+    const assignmentsResult = await query<ApiShiftAssignment>(
       `SELECT
         sa.*,
         n.name as nurse_name,
@@ -86,17 +87,7 @@ export class ScheduleModel {
       }
 
       const shiftAssignments = assignmentsResult.rows
-        .filter((a: any) => a.shift_id === shift.id)
-        .map((a: any) => ({
-          id: a.id,
-          shift_id: a.shift_id,
-          nurse_id: a.nurse_id,
-          nurse_name: a.nurse_name,
-          nurse_role: a.nurse_role,
-          assignment_role: a.assignment_role,
-          assigned_by: a.assigned_by,
-          created_at: a.created_at
-        }))
+        .filter((a) => a.shift_id === shift.id)
 
       shiftsByDate.get(date)!.push({
         id: shift.id,
@@ -160,11 +151,11 @@ export class ScheduleModel {
   /**
    * Create new schedule
    */
-  static async create(input: CreateScheduleInput): Promise<Schedule> {
+  static async create(input: CreateScheduleInput): Promise<ApiSchedule> {
     // Convert YYYY-MM to YYYY-MM-01
     const monthDate = `${input.month}-01`
 
-    const result = await query<Schedule>(
+    const result = await query<ApiSchedule>(
       `INSERT INTO schedules (month, status)
        VALUES ($1, 'draft')
        RETURNING *`,
@@ -176,7 +167,7 @@ export class ScheduleModel {
   /**
    * Update schedule
    */
-  static async update(id: string, input: UpdateScheduleInput): Promise<Schedule | null> {
+  static async update(id: string, input: UpdateScheduleInput): Promise<ApiSchedule | null> {
     const updates: string[] = []
     const values: any[] = []
     let paramIndex = 1
@@ -198,7 +189,7 @@ export class ScheduleModel {
     }
 
     values.push(id)
-    const result = await query<Schedule>(
+    const result = await query<ApiSchedule>(
       `UPDATE schedules
        SET ${updates.join(', ')}, updated_at = NOW()
        WHERE id = $${paramIndex}

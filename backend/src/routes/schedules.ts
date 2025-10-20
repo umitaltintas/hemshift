@@ -1,6 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { ScheduleModel } from '../models/Schedule.js'
-import { ShiftModel } from '../models/Shift.js'
 import { SchedulerService } from '../services/scheduler.service.js'
 import {
   validate,
@@ -10,13 +9,13 @@ import {
 } from '../middleware/validation.js'
 import { NotFoundError, ConflictError } from '../middleware/errorHandler.js'
 
-const router = Router()
+const router: Router = Router()
 
 /**
  * GET /api/schedules
  * Get all schedules
  */
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const schedules = await ScheduleModel.findAll()
     res.json({

@@ -1,12 +1,17 @@
 import { query } from '../db/connection.js'
-import type { Shift, CreateShiftInput, ShiftAssignment, CreateAssignmentInput } from '@shared/types/index.js'
+import type {
+  ApiShift,
+  CreateShiftInput,
+  ApiShiftAssignment,
+  CreateAssignmentInput
+} from '../types/api.js'
 
 export class ShiftModel {
   /**
    * Get all shifts for a schedule
    */
-  static async findBySchedule(scheduleId: string): Promise<Shift[]> {
-    const result = await query<Shift>(
+  static async findBySchedule(scheduleId: string): Promise<ApiShift[]> {
+    const result = await query<ApiShift>(
       'SELECT * FROM shifts WHERE schedule_id = $1 ORDER BY date, type',
       [scheduleId]
     )
@@ -16,8 +21,8 @@ export class ShiftModel {
   /**
    * Get shift by ID
    */
-  static async findById(id: string): Promise<Shift | null> {
-    const result = await query<Shift>(
+  static async findById(id: string): Promise<ApiShift | null> {
+    const result = await query<ApiShift>(
       'SELECT * FROM shifts WHERE id = $1',
       [id]
     )
@@ -27,8 +32,8 @@ export class ShiftModel {
   /**
    * Get shifts by date
    */
-  static async findByDate(scheduleId: string, date: string): Promise<Shift[]> {
-    const result = await query<Shift>(
+  static async findByDate(scheduleId: string, date: string): Promise<ApiShift[]> {
+    const result = await query<ApiShift>(
       'SELECT * FROM shifts WHERE schedule_id = $1 AND date = $2 ORDER BY type',
       [scheduleId, date]
     )
@@ -38,8 +43,8 @@ export class ShiftModel {
   /**
    * Create new shift
    */
-  static async create(input: CreateShiftInput): Promise<Shift> {
-    const result = await query<Shift>(
+  static async create(input: CreateShiftInput): Promise<ApiShift> {
+    const result = await query<ApiShift>(
       `INSERT INTO shifts (schedule_id, date, type, start_time, end_time, required_staff)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
@@ -58,7 +63,7 @@ export class ShiftModel {
   /**
    * Create multiple shifts (bulk insert)
    */
-  static async createMany(shifts: CreateShiftInput[]): Promise<Shift[]> {
+  static async createMany(shifts: CreateShiftInput[]): Promise<ApiShift[]> {
     if (shifts.length === 0) return []
 
     const values: any[] = []
@@ -80,7 +85,7 @@ export class ShiftModel {
       paramIndex += 6
     }
 
-    const result = await query<Shift>(
+    const result = await query<ApiShift>(
       `INSERT INTO shifts (schedule_id, date, type, start_time, end_time, required_staff)
        VALUES ${valuePlaceholders.join(', ')}
        RETURNING *`,
@@ -121,8 +126,8 @@ export class ShiftAssignmentModel {
   /**
    * Get all assignments for a shift
    */
-  static async findByShift(shiftId: string): Promise<ShiftAssignment[]> {
-    const result = await query<any>(
+  static async findByShift(shiftId: string): Promise<ApiShiftAssignment[]> {
+    const result = await query<ApiShiftAssignment>(
       `SELECT
         sa.*,
         n.name as nurse_name,
@@ -133,16 +138,7 @@ export class ShiftAssignmentModel {
       ORDER BY sa.assignment_role DESC, n.name`,
       [shiftId]
     )
-    return result.rows.map((row: any) => ({
-      id: row.id,
-      shift_id: row.shift_id,
-      nurse_id: row.nurse_id,
-      nurse_name: row.nurse_name,
-      nurse_role: row.nurse_role,
-      assignment_role: row.assignment_role,
-      assigned_by: row.assigned_by,
-      created_at: row.created_at
-    }))
+    return result.rows
   }
 
   /**
@@ -151,8 +147,8 @@ export class ShiftAssignmentModel {
   static async findByNurseInSchedule(
     nurseId: string,
     scheduleId: string
-  ): Promise<ShiftAssignment[]> {
-    const result = await query<any>(
+  ): Promise<ApiShiftAssignment[]> {
+    const result = await query<ApiShiftAssignment>(
       `SELECT sa.*, n.name as nurse_name, n.role as nurse_role
        FROM shift_assignments sa
        JOIN nurses n ON sa.nurse_id = n.id
@@ -171,8 +167,8 @@ export class ShiftAssignmentModel {
     shiftId: string,
     input: CreateAssignmentInput,
     assignedBy: 'algorithm' | 'manual' = 'manual'
-  ): Promise<ShiftAssignment> {
-    const result = await query<any>(
+  ): Promise<ApiShiftAssignment> {
+    const result = await query<ApiShiftAssignment>(
       `INSERT INTO shift_assignments (shift_id, nurse_id, assigned_by)
        VALUES ($1, $2, $3)
        RETURNING *`,
