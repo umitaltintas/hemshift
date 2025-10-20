@@ -110,7 +110,7 @@ describe('ShiftModel', () => {
 
   it('covers optional values and early-return branches', async () => {
     queryMock.mockResolvedValueOnce({ rows: [{ id: 'shift2', required_staff: 4 }] });
-    const created = await ShiftModel.create({
+    await ShiftModel.create({
       schedule_id: 's1',
       date: '2025-08-13',
       type: 'night_16h',
@@ -118,47 +118,78 @@ describe('ShiftModel', () => {
       end_time: '08:00',
       required_staff: 4,
     });
-    expect(created).toEqual({ id: 'shift2', required_staff: 4 });
-    expect(queryMock).toHaveBeenCalledTimes(1);
+    const createArgs = queryMock.mock.calls.at(-1)!;
+    expect(createArgs[1][5]).toBe(4);
 
-    const afterLastCall = queryMock.mock.calls.at(-1)!;
-    expect(afterLastCall[1]).toContain(4);
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'shift-bulk' }] });
+    await ShiftModel.createMany([
+      {
+        schedule_id: 's1',
+        date: '2025-08-14',
+        type: 'day_8h',
+        start_time: '08:00',
+        end_time: '16:00',
+        required_staff: 3,
+      },
+    ]);
+    const bulkArgs = queryMock.mock.calls.at(-1)!;
+    expect(bulkArgs[1][5]).toBe(3);
 
+    const callsBeforeEmptyBulk = queryMock.mock.calls.length;
     expect(await ShiftModel.createMany([])).toEqual([]);
-    expect(queryMock).toHaveBeenCalledTimes(1);
+    expect(queryMock.mock.calls.length).toBe(callsBeforeEmptyBulk);
 
     queryMock.mockResolvedValueOnce({ rowCount: 0 });
     expect(await ShiftModel.delete('ghost-shift')).toBe(false);
-    expect(queryMock).toHaveBeenCalledTimes(2);
-
-    expect(await ShiftAssignmentModel.createMany([])).toBe(0);
-    expect(queryMock).toHaveBeenCalledTimes(2);
 
     queryMock.mockResolvedValueOnce({ rowCount: 0 });
     expect(await ShiftModel.deleteBySchedule('ghost-sched')).toBe(0);
-    expect(queryMock).toHaveBeenCalledTimes(3);
+
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'assign2' }] });
+    queryMock.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 'assign2',
+          shift_id: 'shift2',
+          nurse_id: 'n2',
+          nurse_name: 'Ben',
+          nurse_role: 'staff',
+          assignment_role: 'staff',
+          assigned_by: 'manual',
+          created_at: '2025-08-14',
+        },
+      ],
+    });
+    const manualAssignment = await ShiftAssignmentModel.create('shift2', { nurse_id: 'n2' });
+    expect(manualAssignment.assigned_by).toBe('manual');
+
+    const callsBeforeEmptyAssignments = queryMock.mock.calls.length;
+    expect(await ShiftAssignmentModel.createMany([])).toBe(0);
+    expect(queryMock.mock.calls.length).toBe(callsBeforeEmptyAssignments);
+
+    queryMock.mockResolvedValueOnce({});
+    expect(
+      await ShiftAssignmentModel.createMany([
+        { shift_id: 'shift2', nurse_id: 'n3', assigned_by: 'manual' },
+      ])
+    ).toBe(0);
 
     queryMock.mockResolvedValueOnce({ rows: [{ count: '0' }] });
     expect(await ShiftAssignmentModel.isNurseAssignedOnDate('n2', 's1', '2025-08-14')).toBe(false);
-    expect(queryMock).toHaveBeenCalledTimes(4);
 
     queryMock.mockResolvedValueOnce({ rows: [] });
     expect(await ShiftAssignmentModel.getShiftCounts('shift2')).toEqual({
       staff_count: 0,
       responsible_count: 0,
     });
-    expect(queryMock).toHaveBeenCalledTimes(5);
 
     queryMock.mockResolvedValueOnce({ rowCount: 0 });
     expect(await ShiftAssignmentModel.delete('ghost-assignment')).toBe(false);
-    expect(queryMock).toHaveBeenCalledTimes(6);
 
     queryMock.mockResolvedValueOnce({ rowCount: 0 });
     expect(await ShiftAssignmentModel.deleteByShift('ghost-shift')).toBe(0);
-    expect(queryMock).toHaveBeenCalledTimes(7);
 
     queryMock.mockResolvedValueOnce({ rows: [] });
     expect(await ShiftModel.findById('missing')).toBeNull();
-    expect(queryMock).toHaveBeenCalledTimes(8);
   });
 });

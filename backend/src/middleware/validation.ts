@@ -14,9 +14,9 @@ export function validate(schema: z.ZodSchema) {
       if (error instanceof ZodError) {
         const details = error.errors
           ? error.errors.map((err) => ({
-              field: err.path.join('.'),
-              message: err.message
-            }))
+            field: err.path.join('.'),
+            message: err.message
+          }))
           : error.message
         next(new ValidationError('Girdi doğrulama hatası', details))
       } else {

@@ -68,6 +68,24 @@ describe('validation middleware', () => {
     expect(err?.details).toEqual([{ field: 'field', message: 'Field is required' }]);
   });
 
+  it('falls back to error.message when issue array missing', async () => {
+    const zodErr = new z.ZodError([]);
+    (zodErr as any).errors = undefined;
+
+    const schema = {
+      parseAsync: vi.fn().mockRejectedValue(zodErr),
+    } as unknown as z.ZodSchema;
+
+    const validator = validate(schema);
+    const next = vi.fn<Parameters<NextFunction>, void>();
+
+    await validator(buildReq({}), noopRes, next);
+
+    const [err] = next.mock.calls[0];
+    expect(err).toBeInstanceOf(ValidationError);
+    expect(err?.details).toBe(zodErr.message);
+  });
+
   it('passes through non-zod errors untouched', async () => {
     const boom = new Error('boom');
     const schema = {
