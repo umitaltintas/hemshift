@@ -170,4 +170,143 @@ describe('Schedules API', () => {
     expect(res.status).toBe(404);
     expect(res.body.error.message).toBe('Plan bulunamadı');
   });
+
+  it('POST /api/schedules/:id/validate validates schedule completeness', async () => {
+    const schedule = { id: SCHEDULE_ID, month: '2025-10-01', status: 'draft' };
+    const detail = {
+      ...schedule,
+      days: [
+        {
+          date: '2025-10-01',
+          is_weekend: false,
+          shifts: [
+            { id: '1', type: 'day_8h', is_complete: true, current_staff: 2, requires_responsible: true, current_responsible: true, required_staff: 2 }
+          ]
+        }
+      ],
+      stats: { total_days: 31, complete_shifts: 1, incomplete_shifts: 0 }
+    };
+    scheduleMock.findById.mockResolvedValue(schedule as any);
+    scheduleMock.findDetailById.mockResolvedValue(detail as any);
+
+    const res = await request(app).post(`/api/schedules/${SCHEDULE_ID}/validate`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.is_valid).toBe(true);
+    expect(res.body.data.validation.incomplete_shifts).toBe(0);
+  });
+
+  it('POST /api/schedules/:id/validate returns invalid when shifts incomplete', async () => {
+    const schedule = { id: SCHEDULE_ID, month: '2025-10-01', status: 'draft' };
+    const detail = {
+      ...schedule,
+      days: [
+        {
+          date: '2025-10-01',
+          is_weekend: false,
+          shifts: [
+            { id: '1', type: 'day_8h', is_complete: false, current_staff: 1, requires_responsible: false, current_responsible: false, required_staff: 2 }
+          ]
+        }
+      ],
+      stats: { total_days: 31, complete_shifts: 0, incomplete_shifts: 1 }
+    };
+    scheduleMock.findById.mockResolvedValue(schedule as any);
+    scheduleMock.findDetailById.mockResolvedValue(detail as any);
+
+    const res = await request(app).post(`/api/schedules/${SCHEDULE_ID}/validate`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.is_valid).toBe(false);
+    expect(res.body.data.validation.incomplete_shifts).toBe(1);
+    expect(res.body.data.validation.issues.length).toBeGreaterThan(0);
+  });
+
+  it('POST /api/schedules/:id/validate returns 404 when schedule missing', async () => {
+    scheduleMock.findById.mockResolvedValue(null);
+
+    const res = await request(app).post(`/api/schedules/${SCHEDULE_ID}/validate`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.message).toBe('Plan bulunamadı');
+  });
+
+  it('GET /api/schedules/:id/export/excel exports schedule data', async () => {
+    const schedule = { id: SCHEDULE_ID, month: '2025-10-01', status: 'draft', fairness_score: 95 };
+    const detail = {
+      ...schedule,
+      days: [
+        {
+          date: '2025-10-01',
+          is_weekend: false,
+          shifts: [
+            {
+              id: '1',
+              type: 'day_8h',
+              start_time: '08:00',
+              end_time: '16:00',
+              required_staff: 2,
+              current_staff: 2,
+              assignments: [
+                { nurse_id: 'n1', nurse_name: 'Ayşe', nurse_role: 'staff' }
+              ]
+            }
+          ]
+        }
+      ],
+      stats: { total_days: 31, complete_shifts: 1, incomplete_shifts: 0 }
+    };
+    scheduleMock.findById.mockResolvedValue(schedule as any);
+    scheduleMock.findDetailById.mockResolvedValue(detail as any);
+
+    const res = await request(app).get(`/api/schedules/${SCHEDULE_ID}/export/excel`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toBeDefined();
+    expect(res.body.data.schedule).toEqual({ id: SCHEDULE_ID, month: '2025-10-01', status: 'draft', fairness_score: 95 });
+  });
+
+  it('GET /api/schedules/:id/export/csv exports schedule as CSV', async () => {
+    const schedule = { id: SCHEDULE_ID, month: '2025-10-01', status: 'draft' };
+    const detail = {
+      ...schedule,
+      days: [
+        {
+          date: '2025-10-01',
+          is_weekend: false,
+          shifts: [
+            {
+              id: '1',
+              type: 'day_8h',
+              start_time: '08:00',
+              end_time: '16:00',
+              required_staff: 2,
+              current_staff: 2,
+              assignments: [
+                { nurse_id: 'n1', nurse_name: 'Ayşe', nurse_role: 'staff' }
+              ]
+            }
+          ]
+        }
+      ],
+      stats: { total_days: 31, complete_shifts: 1, incomplete_shifts: 0 }
+    };
+    scheduleMock.findById.mockResolvedValue(schedule as any);
+    scheduleMock.findDetailById.mockResolvedValue(detail as any);
+
+    const res = await request(app).get(`/api/schedules/${SCHEDULE_ID}/export/csv`);
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Tarih');
+    expect(res.text).toContain('2025-10-01');
+  });
+
+  it('GET /api/schedules/:id/export/excel returns 404 when schedule missing', async () => {
+    scheduleMock.findById.mockResolvedValue(null);
+
+    const res = await request(app).get(`/api/schedules/${SCHEDULE_ID}/export/excel`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.message).toBe('Plan bulunamadı');
+  });
 });

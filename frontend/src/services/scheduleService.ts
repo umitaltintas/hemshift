@@ -60,7 +60,7 @@ export const publishSchedule = async (id: string): Promise<ScheduleListItem> => 
 };
 
 export const validateSchedule = async (scheduleId: string): Promise<ValidationResult> => {
-  const response = await api.get<ApiResponse<ApiValidationResult>>(`/schedules/${scheduleId}/validate`);
+  const response = await api.post<ApiResponse<ApiValidationResult>>(`/schedules/${scheduleId}/validate`, {});
   return mapValidationResult(response.data.data);
 };
 

@@ -117,7 +117,11 @@ const Dashboard: React.FC = () => {
     setIsExporting(format);
     setActionMessage(null);
     try {
-      const blob = await exportSchedule({ scheduleId: schedule.id, format });
+      // Use mutateAsync from the mutation hook which handles the { scheduleId, format } parameter
+      const blob = await exportSchedule({
+        scheduleId: schedule.id,
+        format
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
