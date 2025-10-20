@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { PageErrorBoundary } from './components/PageErrorBoundary';
 import { MainLayout } from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Nurses from './pages/Nurses';
@@ -10,25 +12,31 @@ import ScheduleEditor from './pages/ScheduleEditor';
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/*"
-          element={
-            <MainLayout>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/nurses" element={<Nurses />} />
-                <Route path="/leaves" element={<Leaves />} />
-                <Route path="/stats" element={<Statistics />} />
-                <Route path="/schedule/:month" element={<ScheduleEditor />} />
-              </Routes>
-            </MainLayout>
-          }
-        />
-      </Routes>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/*"
+            element={
+              <ErrorBoundary>
+                <MainLayout>
+                  <ErrorBoundary>
+                    <Routes>
+                      <Route path="/" element={<PageErrorBoundary pageTitle="Kontrol Paneli"><Dashboard /></PageErrorBoundary>} />
+                      <Route path="/nurses" element={<PageErrorBoundary pageTitle="Hemşireler"><Nurses /></PageErrorBoundary>} />
+                      <Route path="/leaves" element={<PageErrorBoundary pageTitle="İzinler"><Leaves /></PageErrorBoundary>} />
+                      <Route path="/stats" element={<PageErrorBoundary pageTitle="İstatistikler"><Statistics /></PageErrorBoundary>} />
+                      <Route path="/schedule/:month" element={<PageErrorBoundary pageTitle="Plan Editörü"><ScheduleEditor /></PageErrorBoundary>} />
+                    </Routes>
+                  </ErrorBoundary>
+                </MainLayout>
+              </ErrorBoundary>
+            }
+          />
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 };
 

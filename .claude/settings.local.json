@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p docs)",
+      "Bash(docker-compose up -d)",
+      "Bash(docker-compose logs postgres)",
+      "Bash(npm run dev)",
+      "Bash(curl -s http://localhost:8080/health)",
+      "Bash(curl -s http://localhost:8080/api/nurses)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:8080/api/schedules/generate -H \"Content-Type: application/json\" -d '{\"\"\"\"month\"\"\"\": \"\"\"\"2025-02\"\"\"\"}')",
+      "Bash(curl -X POST http://localhost:8080/api/schedules/generate -H \"Content-Type: application/json\" -d '{\"\"month\"\":\"\"2025-02\"\"}')",
+      "Bash(tree:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
