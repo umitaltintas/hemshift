@@ -156,7 +156,7 @@ const Statistics: React.FC = () => {
                 <p className="text-sm text-gray-500">Durum: {selectedSchedule.status === 'published' ? 'Yayınlandı' : 'Taslak'}</p>
               </div>
               <div className="rounded-lg bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700">
-                Adalet Skoru: {selectedSchedule.fairnessScore?.toFixed(1) ?? '—'}
+                Adalet Skoru: {typeof selectedSchedule.fairnessScore === 'number' ? selectedSchedule.fairnessScore.toFixed(1) : '—'}
               </div>
             </div>
           </section>

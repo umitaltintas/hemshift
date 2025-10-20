@@ -64,7 +64,7 @@ const mapBaseSchedule = (schedule: ApiSchedule): ScheduleListItem => ({
   id: schedule.id,
   month: monthToKey(schedule.month),
   status: schedule.status,
-  fairnessScore: schedule.fairness_score,
+  fairnessScore: schedule.fairness_score ? Number(schedule.fairness_score) : null,
   createdAt: schedule.created_at,
   updatedAt: schedule.updated_at
 });
