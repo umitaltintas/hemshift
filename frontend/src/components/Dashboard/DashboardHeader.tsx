@@ -1,4 +1,5 @@
 import React from 'react';
+import { MonthPicker } from './MonthPicker';
 
 interface DashboardHeaderProps {
   month: string;
@@ -42,12 +43,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <input
-          type="month"
-          value={month}
-          onChange={(event) => onMonthChange(event.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
+        <MonthPicker month={month} onMonthChange={onMonthChange} />
         <div className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white p-1 shadow-sm">
           <button
             type="button"
