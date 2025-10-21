@@ -4,6 +4,7 @@ import {
   standardDeviation,
   calculateFairnessScore,
   normalizeScore,
+  weightedRandomSelection,
 } from '../../utils/fairnessCalculator';
 
 describe('fairnessCalculator', () => {
@@ -65,5 +66,85 @@ describe('fairnessCalculator', () => {
     it('should return 100 if max equals min', () => {
         expect(normalizeScore(5, 5, 5)).toBe(100);
       });
+  });
+
+  describe('weightedRandomSelection', () => {
+    it('should return empty array if input is empty', () => {
+      const result = weightedRandomSelection([], 5);
+      expect(result).toEqual([]);
+    });
+
+    it('should return all items if count >= array length', () => {
+      const items = [
+        { item: 'A', score: 10 },
+        { item: 'B', score: 20 },
+      ];
+      const result = weightedRandomSelection(items, 5);
+      expect(result).toHaveLength(2);
+      expect(result).toContain('A');
+      expect(result).toContain('B');
+    });
+
+    it('should select correct number of items', () => {
+      const items = [
+        { item: 'A', score: 10 },
+        { item: 'B', score: 20 },
+        { item: 'C', score: 30 },
+        { item: 'D', score: 40 },
+      ];
+      const result = weightedRandomSelection(items, 2);
+      expect(result).toHaveLength(2);
+    });
+
+    it('should not select the same item twice', () => {
+      const items = [
+        { item: 'A', score: 10 },
+        { item: 'B', score: 20 },
+        { item: 'C', score: 30 },
+      ];
+      const result = weightedRandomSelection(items, 3);
+      const uniqueItems = new Set(result);
+      expect(uniqueItems.size).toBe(3);
+    });
+
+    it('should favor items with lower scores over multiple runs', () => {
+      const items = [
+        { item: 'HighPriority', score: 10 },
+        { item: 'LowPriority', score: 90 },
+      ];
+
+      const counts = { HighPriority: 0, LowPriority: 0 };
+      const runs = 100;
+
+      for (let i = 0; i < runs; i++) {
+        const result = weightedRandomSelection(items, 1);
+        if (result[0] === 'HighPriority') {
+          counts.HighPriority++;
+        } else {
+          counts.LowPriority++;
+        }
+      }
+
+      // HighPriority should be selected more often than LowPriority
+      expect(counts.HighPriority).toBeGreaterThan(counts.LowPriority);
+    });
+
+    it('should produce different results across multiple runs', () => {
+      const items = [
+        { item: 'A', score: 10 },
+        { item: 'B', score: 20 },
+        { item: 'C', score: 30 },
+        { item: 'D', score: 40 },
+      ];
+
+      const results = new Set();
+      for (let i = 0; i < 20; i++) {
+        const result = weightedRandomSelection(items, 2);
+        results.add(result.join(','));
+      }
+
+      // Should have multiple different combinations
+      expect(results.size).toBeGreaterThan(1);
+    });
   });
 });

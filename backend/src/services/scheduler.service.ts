@@ -19,7 +19,8 @@ import {
 import {
   mean,
   standardDeviation,
-  calculateFairnessScore
+  calculateFairnessScore,
+  weightedRandomSelection
 } from '../utils/fairnessCalculator.js'
 
 // =============================================================================
@@ -41,6 +42,7 @@ interface NurseStats {
   dayShiftCount: number
   consecutiveDays: number
   lastShiftDate: Date | null
+  lastShiftType: ShiftType | null
 }
 
 interface ShiftNeed {
@@ -168,7 +170,8 @@ export class SchedulerService {
         weekendShiftCount: 0,
         dayShiftCount: 0,
         consecutiveDays: 0,
-        lastShiftDate: null
+        lastShiftDate: null,
+        lastShiftType: null
       })
     }
   }
@@ -317,7 +320,8 @@ export class SchedulerService {
         hours: 8,
         isNight: false,
         isWeekend: day.isWeekend,
-        date: day.date
+        date: day.date,
+        shiftType: 'day_8h'
       })
     }
 
@@ -349,7 +353,8 @@ export class SchedulerService {
         hours: 16,
         isNight: true,
         isWeekend: day.isWeekend,
-        date: day.date
+        date: day.date,
+        shiftType: 'night_16h'
       })
     }
 
@@ -381,7 +386,8 @@ export class SchedulerService {
         hours: 24,
         isNight: true,
         isWeekend: true,
-        date: day.date
+        date: day.date,
+        shiftType: 'weekend_24h'
       })
     }
 
@@ -404,6 +410,19 @@ export class SchedulerService {
       }
 
       const stats = this.nurseStats.get(nurse.id)!
+
+      // Worked night yesterday? (rest period)
+      if (stats.lastShiftDate && stats.lastShiftType) {
+        const yesterday = new Date(day.date)
+        yesterday.setDate(yesterday.getDate() - 1)
+        const lastShiftStr = formatDate(stats.lastShiftDate)
+        const yesterdayStr = formatDate(yesterday)
+
+        if (lastShiftStr === yesterdayStr && stats.lastShiftType === 'night_16h') {
+          // Need rest after night shift
+          return false
+        }
+      }
 
       // Consecutive days limit (max 5)
       if (stats.consecutiveDays >= 5) {
@@ -432,13 +451,13 @@ export class SchedulerService {
       const stats = this.nurseStats.get(nurse.id)!
 
       // Worked night yesterday? (rest period)
-      if (stats.lastShiftDate) {
+      if (stats.lastShiftDate && stats.lastShiftType) {
         const yesterday = new Date(day.date)
         yesterday.setDate(yesterday.getDate() - 1)
         const lastShiftStr = formatDate(stats.lastShiftDate)
         const yesterdayStr = formatDate(yesterday)
 
-        if (lastShiftStr === yesterdayStr && stats.nightShiftCount > 0) {
+        if (lastShiftStr === yesterdayStr && stats.lastShiftType === 'night_16h') {
           // Need rest after night shift
           return false
         }
@@ -492,8 +511,9 @@ export class SchedulerService {
   }
 
   /**
-   * Select nurses by priority score
-   * Lower score = higher priority
+   * Select nurses by priority score with randomization
+   * Lower score = higher priority (higher probability of selection)
+   * Uses weighted random sampling to introduce variation while maintaining fairness
    */
   private selectNursesByPriority(
     nurses: ApiNurse[],
@@ -501,14 +521,12 @@ export class SchedulerService {
     count: number
   ): ApiNurse[] {
     const scored = nurses.map((nurse) => ({
-      nurse,
+      item: nurse,
       score: this.calculatePriorityScore(nurse, day)
     }))
 
-    // Sort by score (ascending - lower is better)
-    scored.sort((a, b) => a.score - b.score)
-
-    return scored.slice(0, count).map((s) => s.nurse)
+    // Use weighted random selection: nurses with lower scores have higher probability
+    return weightedRandomSelection(scored, count)
   }
 
   /**
@@ -564,6 +582,7 @@ export class SchedulerService {
       isNight: boolean
       isWeekend: boolean
       date: Date
+      shiftType: ShiftType
     }
   ) {
     const stats = this.nurseStats.get(nurseId)!
@@ -594,6 +613,7 @@ export class SchedulerService {
     }
 
     stats.lastShiftDate = update.date
+    stats.lastShiftType = update.shiftType
   }
 
   /**

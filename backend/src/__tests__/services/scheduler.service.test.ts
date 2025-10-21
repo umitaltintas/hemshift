@@ -324,6 +324,7 @@ describe('SchedulerService', () => {
 
       const statsMap = svc.nurseStats;
       statsMap.get('n1').lastShiftDate = new Date('2025-02-04');
+      statsMap.get('n1').lastShiftType = 'night_16h'; // Worked a night shift yesterday
       statsMap.get('n1').nightShiftCount = 1;
       statsMap.get('n2').consecutiveDays = 5;
       statsMap.get('n3').nightShiftCount = 10;
