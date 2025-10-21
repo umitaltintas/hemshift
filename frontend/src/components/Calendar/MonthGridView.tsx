@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import { format, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import ShiftCard from './ShiftCard';
 import DraggableNurse from './DraggableNurse';
 import { Nurse, Schedule, Shift } from '../../types/entities';
 import Error from '../ui/Error';
@@ -15,7 +14,6 @@ interface MonthGridViewProps {
   isError: boolean;
   nursesLoading?: boolean;
   onAssign: (shiftId: string, nurseId: string) => Promise<void>;
-  onRemove: (assignmentId: string) => Promise<void>;
 }
 
 type FeedbackState = { type: 'success' | 'error'; text: string } | null;
@@ -75,8 +73,7 @@ const MonthGridView: React.FC<MonthGridViewProps> = ({
   isLoading,
   isError,
   nursesLoading,
-  onAssign,
-  onRemove
+  onAssign
 }) => {
   const [feedback, setFeedback] = useState<FeedbackState>(null);
 
@@ -130,23 +127,6 @@ const MonthGridView: React.FC<MonthGridViewProps> = ({
         text: message
       });
     }
-  };
-
-  const handleRemove = (assignmentId: string) => {
-    onRemove(assignmentId)
-      .then(() => {
-        setFeedback({
-          type: 'success',
-          text: 'Atama kaldırıldı'
-        });
-      })
-      .catch((error: unknown) => {
-        const message = getErrorMessage(error, 'Atama kaldırılırken hata oluştu');
-        setFeedback({
-          type: 'error',
-          text: message
-        });
-      });
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -238,7 +218,7 @@ const MonthGridView: React.FC<MonthGridViewProps> = ({
                           {calDay.daySchedule.shifts.map((shift) => (
                             <div
                               key={shift.id}
-                              className={`rounded border p-1 text-xs cursor-pointer transition hover:shadow-md ${
+                              className={`rounded border p-1.5 text-xs cursor-pointer transition hover:shadow-md ${
                                 shift.type === 'day_8h'
                                   ? 'border-indigo-200 bg-indigo-50'
                                   : shift.type === 'night_16h'
@@ -247,13 +227,27 @@ const MonthGridView: React.FC<MonthGridViewProps> = ({
                               } ${shift.isComplete ? 'ring-1 ring-emerald-300' : ''}`}
                               title={`${shift.type === 'day_8h' ? 'Gündüz' : shift.type === 'night_16h' ? 'Gece' : 'Haftasonu'} - Tıkla veya sürükle`}
                             >
-                              <div className="flex items-center justify-between gap-0.5">
-                                <span className="font-medium truncate">
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <span className="font-medium">
                                   {shift.type === 'day_8h' ? '📅' : shift.type === 'night_16h' ? '🌙' : '⭐'}
                                 </span>
                                 <span className={`text-xs px-1 rounded ${shift.isComplete ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                                   {shift.currentStaff ?? 0}/{shift.requiredStaff}
                                 </span>
+                              </div>
+                              <div className="space-y-0.5">
+                                {shift.assignments.length > 0 ? (
+                                  shift.assignments.slice(0, 3).map((assignment) => (
+                                    <div key={assignment.id} className="truncate text-gray-700 font-medium">
+                                      {assignment.nurseName}
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-gray-400">Boş</div>
+                                )}
+                                {shift.assignments.length > 3 && (
+                                  <div className="text-gray-500 text-xs">+{shift.assignments.length - 3} daha</div>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -268,28 +262,6 @@ const MonthGridView: React.FC<MonthGridViewProps> = ({
             })}
           </div>
 
-          {/* Day details modal - shown when clicking a day */}
-          <div className="border-t border-gray-200 pt-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Detaylı Vardiya Görünümü</h3>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {schedule.days
-                .filter((day) => day.shifts.length > 0)
-                .map((day) => (
-                  <div key={day.date} className={`rounded-lg border p-3 ${day.isWeekend ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-white'}`}>
-                    <p className="text-xs font-medium text-gray-600 mb-2">
-                      {format(new Date(day.date), 'd MMMM', { locale: tr })}
-                    </p>
-                    <div className="space-y-2">
-                      {day.shifts.map((shift) => (
-                        <div key={shift.id} className="text-xs">
-                          <ShiftCard shift={shift} onRemove={handleRemove} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
         </div>
 
         <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">

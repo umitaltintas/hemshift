@@ -217,7 +217,6 @@ const Dashboard: React.FC = () => {
           isError={isError}
           nursesLoading={nursesLoading}
           onAssign={(shiftId, nurseId) => updateAssignmentAsync({ shiftId, nurseId })}
-          onRemove={(assignmentId) => removeAssignmentAsync(assignmentId)}
         />
       )}
     </div>
