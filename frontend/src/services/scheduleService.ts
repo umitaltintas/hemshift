@@ -87,3 +87,7 @@ export const exportSchedule = async (
 
   return response.data;
 };
+
+export const clearSchedule = async (scheduleId: string): Promise<void> => {
+  await api.delete(`/schedules/${scheduleId}`);
+};

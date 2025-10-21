@@ -14,8 +14,7 @@ import {
   getMonthDates,
   formatDate,
   isWeekend,
-  isHoliday,
-  parseMonth
+  isHoliday
 } from '../utils/dateUtils.js'
 import {
   mean,
@@ -140,8 +139,8 @@ export class SchedulerService {
     console.log(`[SCHEDULER] Found ${this.leaves.length} leaves`)
 
     // Initialize month dates
-    const monthDate = parseMonth(month)
-    const dates = getMonthDates(monthDate.getFullYear(), monthDate.getMonth())
+    const [year, monthNum] = month.split('-').map(Number)
+    const dates = getMonthDates(year, monthNum - 1)
 
     this.monthDates = dates.map((date) => ({
       date,

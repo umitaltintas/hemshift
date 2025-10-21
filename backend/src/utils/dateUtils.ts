@@ -30,10 +30,13 @@ export function isHoliday(_date: Date): boolean {
 }
 
 /**
- * Format date as YYYY-MM-DD
+ * Format date as YYYY-MM-DD (in local timezone, not UTC)
  */
 export function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0]
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 /**
@@ -46,6 +49,8 @@ export function parseMonth(month: string): Date {
 
 /**
  * Get all dates in a month
+ * @param year - The year
+ * @param month - The 0-indexed month (0 = January, 11 = December)
  */
 export function getMonthDates(year: number, month: number): Date[] {
   const days = getDaysInMonth(year, month)

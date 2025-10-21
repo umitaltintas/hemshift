@@ -30,6 +30,7 @@ const Dashboard: React.FC = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isExporting, setIsExporting] = useState<'excel' | 'csv' | null>(null);
+  const [isClearing, setIsClearing] = useState(false);
 
   // Persist view mode to localStorage
   useEffect(() => {
@@ -44,6 +45,7 @@ const Dashboard: React.FC = () => {
     publishScheduleAsync,
     validateSchedule,
     exportSchedule,
+    clearScheduleAsync,
     updateAssignmentAsync,
     removeAssignmentAsync
   } = useSchedule(month);
@@ -154,6 +156,32 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleClear = async () => {
+    if (!schedule || schedule.status === 'published') return;
+
+    // Confirmation dialog
+    if (!window.confirm(`${monthLabel} ayının takvimini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) {
+      return;
+    }
+
+    setIsClearing(true);
+    setActionMessage(null);
+    try {
+      await clearScheduleAsync(schedule.id);
+      setActionMessage({
+        type: 'success',
+        text: `${monthLabel} planı başarıyla silindi`
+      });
+    } catch (error) {
+      setActionMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Plan silinirken hata oluştu'
+      });
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   const statusBadge = schedule
     ? statusStyles[schedule.status] ?? statusStyles.draft
     : 'bg-gray-100 text-gray-600 border-gray-200';
@@ -170,11 +198,13 @@ const Dashboard: React.FC = () => {
         onPublish={handlePublish}
         onValidate={handleValidate}
         onExport={handleExport}
+        onClear={handleClear}
         onViewModeChange={setViewMode}
         isGenerating={isGenerating}
         isPublishing={isPublishing}
         isValidating={isValidating}
         isExporting={isExporting}
+        isClearing={isClearing}
       />
 
       <ActionMessage message={actionMessage} />

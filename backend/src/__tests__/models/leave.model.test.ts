@@ -26,7 +26,7 @@ describe('LeaveModel', () => {
     queryMock.mockResolvedValueOnce(createQueryResult({ rows }));
     await LeaveModel.findAll({ nurse_id: 'n1', month: '2025-02' });
     const [, params] = queryMock.mock.calls.at(-1)!;
-    expect(params).toEqual(['n1', '2025-02-01', '2025-02-27']);
+    expect(params).toEqual(['n1', '2025-02-01', '2025-02-28']); // February 2025 has 28 days
   });
 
   it('retrieves single and ranged leaves', async () => {

@@ -82,7 +82,12 @@ export class ScheduleModel {
     const shiftsByDate = new Map<string, ShiftWithAssignments[]>()
 
     for (const shift of shiftsResult.rows) {
-      const date = shift.date.toISOString().split('T')[0]
+      // Handle date formatting with local timezone
+      const dateObj = typeof shift.date === 'string' ? new Date(shift.date) : shift.date
+      const y = dateObj.getFullYear()
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0')
+      const d = String(dateObj.getDate()).padStart(2, '0')
+      const date = `${y}-${m}-${d}`
       if (!shiftsByDate.has(date)) {
         shiftsByDate.set(date, [])
       }
@@ -123,7 +128,11 @@ export class ScheduleModel {
         monthDate.getMonth(),
         day
       )
-      const dateStr = date.toISOString().split('T')[0]
+      // Format date with local timezone to avoid UTC offset issues
+      const y = date.getFullYear()
+      const m = String(date.getMonth() + 1).padStart(2, '0')
+      const d = String(date.getDate()).padStart(2, '0')
+      const dateStr = `${y}-${m}-${d}`
       const dayOfWeek = date.getDay()
 
       days.push({

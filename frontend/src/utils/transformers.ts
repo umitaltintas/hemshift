@@ -143,9 +143,10 @@ export const mapValidationResult = (result: ApiValidationResult): ValidationResu
   errors: result.errors,
   warnings: result.warnings,
   completeness: {
-    totalShifts: result.completeness.total_shifts,
-    completeShifts: result.completeness.complete_shifts,
-    percentage: result.completeness.percentage
+    totalShifts: result.validation.total_shifts,
+    completeShifts: result.validation.complete_shifts,
+    incompleteShifts: result.validation.incomplete_shifts,
+    issues: result.validation.issues
   }
 });
 

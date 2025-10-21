@@ -31,7 +31,7 @@ describe('dateUtils', () => {
     expect(parsed.getMonth()).toBe(6); // July
     expect(parsed.getDate()).toBe(1);
 
-    const formatted = formatDate(new Date('2025-07-01T00:00:00Z'));
+    const formatted = formatDate(new Date(2025, 6, 1)); // Local timezone
     expect(formatted).toBe('2025-07-01');
   });
 
@@ -46,7 +46,7 @@ describe('dateUtils', () => {
   });
 
   it('adds days to a date without mutating the original reference', () => {
-    const base = new Date('2025-03-10T00:00:00Z');
+    const base = new Date(2025, 2, 10); // Local timezone
     const result = addDays(base, 5);
     expect(formatDate(result)).toBe('2025-03-15');
     expect(formatDate(base)).toBe('2025-03-10'); // unchanged

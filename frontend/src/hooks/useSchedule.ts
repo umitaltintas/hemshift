@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  clearSchedule,
   exportSchedule,
   generateSchedule,
   getSchedule,
@@ -68,6 +69,11 @@ export const useSchedule = (month: string) => {
       exportSchedule(scheduleId, format)
   });
 
+  const clearMutation = useMutation({
+    mutationFn: clearSchedule,
+    onSuccess: invalidate
+  });
+
   return {
     schedule,
     isLoading,
@@ -82,6 +88,7 @@ export const useSchedule = (month: string) => {
     publishSchedule: publishMutation.mutate,
     publishScheduleAsync: publishMutation.mutateAsync,
     validateSchedule: validateMutation.mutateAsync as (scheduleId: string) => Promise<ValidationResult>,
-    exportSchedule: exportMutation.mutateAsync
+    exportSchedule: exportMutation.mutateAsync,
+    clearScheduleAsync: clearMutation.mutateAsync
   };
 };

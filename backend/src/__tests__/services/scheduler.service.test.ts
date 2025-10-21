@@ -40,7 +40,12 @@ describe('SchedulerService', () => {
       const days = new Date(year, month + 1, 0).getDate();
       return Array.from({ length: days }, (_, i) => new Date(year, month, i + 1));
     });
-    (dateUtils.formatDate as Mock).mockImplementation((date: Date) => date.toISOString().split('T')[0]);
+    (dateUtils.formatDate as Mock).mockImplementation((date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    });
     (dateUtils.isWeekend as Mock).mockImplementation((d: Date) => [6, 0].includes(d.getDay()));
     (dateUtils.isHoliday as Mock).mockReturnValue(false);
   });
@@ -50,7 +55,12 @@ describe('SchedulerService', () => {
       // Arrange: Mock all model methods that will be called
       const mockDates = Array.from({ length: 31 }, (_, i) => new Date(2025, 9, i + 1));
       (dateUtils.getMonthDates as Mock).mockReturnValue(mockDates);
-      (dateUtils.formatDate as Mock).mockImplementation((date: Date) => date.toISOString().split('T')[0]);
+      (dateUtils.formatDate as Mock).mockImplementation((date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    });
       (dateUtils.isWeekend as Mock).mockReturnValue(false);
       (dateUtils.isHoliday as Mock).mockReturnValue(false);
 
@@ -124,7 +134,12 @@ describe('SchedulerService', () => {
       // Mock date functions to have a predictable calendar
       const mockDates = Array.from({ length: 31 }, (_, i) => new Date(2025, 2, i + 1));
       (dateUtils.getMonthDates as Mock).mockReturnValue(mockDates);
-      (dateUtils.formatDate as Mock).mockImplementation((date: Date) => date.toISOString().split('T')[0]);
+      (dateUtils.formatDate as Mock).mockImplementation((date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    });
       (dateUtils.isWeekend as Mock).mockImplementation((d: Date) => [6, 0].includes(d.getDay()));
       (dateUtils.isHoliday as Mock).mockReturnValue(false);
 
@@ -147,7 +162,11 @@ describe('SchedulerService', () => {
 
       const createdShifts: Array<{ id: string; date: string; type: 'day_8h' | 'night_16h' | 'weekend_24h' }> = [];
       for (const date of mockDates) {
-        const dateStr = date.toISOString().split('T')[0];
+        // Format date using local timezone (same as the scheduler does)
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${d}`;
         const isWeekendDay = [6, 0].includes(date.getDay());
 
         if (isWeekendDay) {

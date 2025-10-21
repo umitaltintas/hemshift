@@ -233,23 +233,25 @@ export interface MonthlyStats {
 
 export interface ApiValidationResult {
   is_valid: boolean;
-  errors: string[];
-  warnings: string[];
-  completeness: {
+  errors?: string[];
+  warnings?: string[];
+  validation: {
     total_shifts: number;
     complete_shifts: number;
-    percentage: number;
+    incomplete_shifts: number;
+    issues: string[];
   };
 }
 
 export interface ValidationResult {
   isValid: boolean;
-  errors: string[];
-  warnings: string[];
+  errors?: string[];
+  warnings?: string[];
   completeness: {
     totalShifts: number;
     completeShifts: number;
-    percentage: number;
+    incompleteShifts: number;
+    issues: string[];
   };
 }
 

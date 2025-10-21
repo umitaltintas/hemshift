@@ -11,11 +11,13 @@ interface DashboardHeaderProps {
   onPublish: () => void;
   onValidate: () => void;
   onExport: (format: 'excel' | 'csv') => void;
+  onClear: () => void;
   onViewModeChange: (mode: 'calendar' | 'board' | 'month-grid') => void;
   isGenerating: boolean;
   isPublishing: boolean;
   isValidating: boolean;
   isExporting: 'excel' | 'csv' | null;
+  isClearing: boolean;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
@@ -28,11 +30,13 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onPublish,
   onValidate,
   onExport,
+  onClear,
   onViewModeChange,
   isGenerating,
   isPublishing,
   isValidating,
-  isExporting
+  isExporting,
+  isClearing
 }) => {
   return (
     <header className="flex flex-wrap items-center justify-between gap-4">
@@ -124,6 +128,15 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             {isExporting === 'csv' ? 'CSV hazırlanıyor...' : 'CSV'}
           </button>
         </div>
+        <button
+          type="button"
+          onClick={onClear}
+          disabled={!schedule || schedule.status === 'published' || isClearing}
+          className="rounded-lg border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 shadow-sm transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
+          title={schedule?.status === 'published' ? 'Yayınlanmış planlar silinemez' : 'Takvimi temizle'}
+        >
+          {isClearing ? 'Temizleniyor...' : '🗑️ Takvimi Temizle'}
+        </button>
       </div>
     </header>
   );

@@ -28,7 +28,11 @@ export class LeaveModel {
       // Get leaves that overlap with the given month
       const [year, month] = filters.month.split('-')
       const monthStart = `${year}-${month}-01`
-      const monthEnd = new Date(parseInt(year), parseInt(month), 0).toISOString().split('T')[0]
+      // Calculate last day of the month (using local timezone to avoid UTC offset issues)
+      const y = parseInt(year)
+      const m = parseInt(month)
+      const lastDay = new Date(y, m, 0).getDate()
+      const monthEnd = `${year}-${month.padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
 
       sql += ` AND (
         (l.start_date <= $${paramIndex} AND l.end_date >= $${paramIndex}) OR

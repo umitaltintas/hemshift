@@ -32,9 +32,9 @@ export const ValidationResultSection: React.FC<ValidationResultSectionProps> = (
           <h4 className="text-xs font-medium uppercase tracking-wide text-gray-500">
             Hatalar
           </h4>
-          {validationResult.errors.length > 0 ? (
+          {(validationResult.errors?.length ?? 0) > 0 ? (
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-700">
-              {validationResult.errors.map((error, index) => (
+              {validationResult.errors?.map((error, index) => (
                 <li key={`${error}-${index}`}>{error}</li>
               ))}
             </ul>
@@ -48,9 +48,9 @@ export const ValidationResultSection: React.FC<ValidationResultSectionProps> = (
           <h4 className="text-xs font-medium uppercase tracking-wide text-gray-500">
             Uyarılar
           </h4>
-          {validationResult.warnings.length > 0 ? (
+          {(validationResult.warnings?.length ?? 0) > 0 ? (
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-700">
-              {validationResult.warnings.map((warning, index) => (
+              {validationResult.warnings?.map((warning, index) => (
                 <li key={`${warning}-${index}`}>{warning}</li>
               ))}
             </ul>
