@@ -1,4 +1,5 @@
 import { query } from '../db/connection.js'
+import { isWeekendDay } from '../config/weekendConfig.js'
 import type {
   ApiSchedule,
   CreateScheduleInput,
@@ -127,7 +128,7 @@ export class ScheduleModel {
 
       days.push({
         date: dateStr,
-        is_weekend: dayOfWeek === 0 || dayOfWeek === 6,
+        is_weekend: isWeekendDay(dayOfWeek),
         is_holiday: false, // TODO: Holiday detection
         shifts: shiftsByDate.get(dateStr) || []
       })

@@ -1,10 +1,10 @@
-# 🏥 Shift Planner
+# 🏥 HemShift
 
 Hemşireler için adaletli ve otomatik vardiya planlama sistemi.
 
 ## 📋 Proje Hakkında
 
-Shift Planner, sorumlu hemşirelerin ekip için aylık vardiya planlarını hızlı, adaletli ve kolay bir şekilde oluşturmasını sağlayan web tabanlı bir uygulamadır. Akıllı algoritması sayesinde:
+HemShift, sorumlu hemşirelerin ekip için aylık vardiya planlarını hızlı, adaletli ve kolay bir şekilde oluşturmasını sağlayan web tabanlı bir uygulamadır. Akıllı algoritması sayesinde:
 
 - ✅ Her hemşireye eşit sayıda gece nöbeti
 - ✅ Dengeli haftasonu çalışması
@@ -60,7 +60,7 @@ Shift Planner, sorumlu hemşirelerin ekip için aylık vardiya planlarını hız
 ## 📁 Proje Yapısı
 
 ```
-shift-planner/
+hemshift/
 ├── frontend/          # React uygulaması
 ├── backend/           # Express API
 ├── docs/              # Dokümantasyon
@@ -83,8 +83,8 @@ shift-planner/
 ### 1. Repository'yi Clone'layın
 
 ```bash
-git clone https://github.com/yourusername/shift-planner.git
-cd shift-planner
+git clone https://github.com/yourusername/hemshift.git
+cd hemshift
 ```
 
 ### 2. Database Setup (Docker ile)
@@ -96,8 +96,8 @@ docker-compose up -d
 veya PostgreSQL kurulu ise:
 
 ```bash
-createdb shift_planner
-psql shift_planner < backend/src/db/migrations/001_initial_schema.sql
+createdb hemshift
+psql hemshift < backend/src/db/migrations/001_initial_schema.sql
 ```
 
 ### 3. Backend Kurulumu
@@ -199,7 +199,7 @@ MIT License - detaylar için [LICENSE](LICENSE) dosyasına bakın.
 
 ## 👥 Geliştirici
 
-[Your Name](https://github.com/yourusername)
+[Your Name](https://github.com/yourusername) - [HemShift GitHub](https://github.com/yourusername/hemshift)
 
 ## 🙏 Teşekkürler
 

@@ -4,13 +4,13 @@ interface DashboardHeaderProps {
   month: string;
   monthLabel: string;
   schedule: any;
-  viewMode: 'calendar' | 'board';
+  viewMode: 'calendar' | 'board' | 'month-grid';
   onMonthChange: (month: string) => void;
   onGenerate: () => void;
   onPublish: () => void;
   onValidate: () => void;
   onExport: (format: 'excel' | 'csv') => void;
-  onViewModeChange: (mode: 'calendar' | 'board') => void;
+  onViewModeChange: (mode: 'calendar' | 'board' | 'month-grid') => void;
   isGenerating: boolean;
   isPublishing: boolean;
   isValidating: boolean;
@@ -60,6 +60,18 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             title="Takvim görünümü"
           >
             📅 Takvim
+          </button>
+          <button
+            type="button"
+            onClick={() => onViewModeChange('month-grid')}
+            className={`rounded px-3 py-1.5 text-xs font-medium transition ${
+              viewMode === 'month-grid'
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Ay takvimi görünümü"
+          >
+            🗓️ Ay
           </button>
           <button
             type="button"

@@ -2,6 +2,8 @@
  * Date utility functions for scheduler
  */
 
+import { isWeekendDay } from '../config/weekendConfig'
+
 /**
  * Get number of days in a month
  */
@@ -10,11 +12,11 @@ export function getDaysInMonth(year: number, month: number): number {
 }
 
 /**
- * Check if date is weekend (Saturday or Sunday)
+ * Check if date is weekend based on current weekend configuration
  */
 export function isWeekend(date: Date): boolean {
   const day = date.getDay()
-  return day === 0 || day === 6 // 0 = Sunday, 6 = Saturday
+  return isWeekendDay(day)
 }
 
 /**

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { format, parse } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { CalendarGrid } from '../components/Calendar';
+import { CalendarGrid, MonthGridView } from '../components/Calendar';
 import BoardView from '../components/Board/BoardView';
 import { useSchedule } from '../hooks/useSchedule';
 import { useNurses } from '../hooks/useNurses';
@@ -20,9 +20,9 @@ const statusStyles: Record<string, string> = {
 
 const Dashboard: React.FC = () => {
   const [month, setMonth] = useState(format(new Date(), 'yyyy-MM'));
-  const [viewMode, setViewMode] = useState<'calendar' | 'board'>(() => {
+  const [viewMode, setViewMode] = useState<'calendar' | 'board' | 'month-grid'>(() => {
     const saved = localStorage.getItem('dashboardViewMode');
-    return (saved as 'calendar' | 'board') || 'calendar';
+    return (saved as 'calendar' | 'board' | 'month-grid') || 'calendar';
   });
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -199,8 +199,18 @@ const Dashboard: React.FC = () => {
           onAssign={(shiftId, nurseId) => updateAssignmentAsync({ shiftId, nurseId })}
           onRemove={(assignmentId) => removeAssignmentAsync(assignmentId)}
         />
-      ) : (
+      ) : viewMode === 'board' ? (
         <BoardView
+          schedule={schedule}
+          nurses={nurses}
+          isLoading={isLoading}
+          isError={isError}
+          nursesLoading={nursesLoading}
+          onAssign={(shiftId, nurseId) => updateAssignmentAsync({ shiftId, nurseId })}
+          onRemove={(assignmentId) => removeAssignmentAsync(assignmentId)}
+        />
+      ) : (
+        <MonthGridView
           schedule={schedule}
           nurses={nurses}
           isLoading={isLoading}
